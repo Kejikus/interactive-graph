@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive graph visualizer</title>
+    <link rel="stylesheet" href="{{ static("libs/vis-js//vis.min.css") }}">
+    <link rel="stylesheet" href="{{ static("css/index.css") }}">
+    <script defer src="{{ static("libs/vis-js/vis.min.js") }}"></script>
+    <script defer src="{{ static("libs/jquery-3.4.0.min.js") }}"></script>
+    <script defer src="{{ static("libs/materialize-src/js/bin/materialize.min.js") }}"></script>
+    <script defer src="{{ static("js/index.js") }}"></script>
+</head>
+<body>
+    <header class="card-panel">
+        Interactive graph visualizer
+    </header>
+    <main>
+        <div class="content card-panel">
+            <div id="graph-popup" style="display: none;">
+                <header></header>
+                <label>Node id: <input type="text" name="id" placeholder="Leave blank for random id"></label>
+                <label>Node label: <input type="text" name="label" placeholder="Inner text"></label>
+                <button name="save">Save</button>
+                <button name="cancel">Cancel</button>
+            </div>
+            <div id="graph-container"></div>
+        </div>
+        <div class="side-bar card-panel">
+            <table id="incidence-matrix">
+                <tr>
+                    <th class="root-cell"></th>
+                    <th data-node-id="1">1</th>
+                    <th data-node-id="1">2222222</th>
+                    <th data-node-id="1">2222222</th>
+                    <th data-node-id="1">2222222</th>
+                    <th data-node-id="1">2222222</th>
+                </tr>
+                <tr>
+                    <th data-node-id="1">1</th>
+                    <td data-edge-id="1">XXXX</td>
+                    <td data-edge-id="1">X</td>
+                    <td data-edge-id="1">X</td>
+                    <td data-edge-id="1">X</td>
+                    <td data-edge-id="1">X</td>
+                </tr>
+            </table>
+        </div>
+    </main>
+    <footer>
+
+    </footer>
+</body>
+</html>

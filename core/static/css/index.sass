@@ -1,0 +1,54 @@
+@import "../variables"
+@import "../materialize_custom"
+
+// Fix for vis.js
+.vis-button
+  box-sizing: initial
+
+body
+  max-width: 1200px
+  margin: auto
+  min-height: 100vh
+
+  > header.card-panel
+    background-color: $primary-color
+    font-weight: bold
+    font-size: 2rem
+    text-align: center
+    padding: 1rem 0 1rem 0
+    border-radius: brs-b(5px)
+    margin: 0
+
+main
+  display: grid
+  grid-template-columns: 2fr 1fr
+
+.content
+  padding: 0
+  margin-right: 10px
+
+.side-bar
+  padding: 0.3rem
+
+  #incidence-matrix
+
+    tr
+      border: none
+
+    th, td
+      text-align: center
+      padding: 0.5rem
+
+      &:nth-child(2n)
+        background-color: $highlight-color
+
+    .root-cell
+      position: relative
+      background: linear-gradient(to top right, transparent 0, transparent 48%, black 50%, transparent 52%)
+
+    tr:not(:first-child) th
+      text-align: right
+
+#graph-container
+  padding: 0
+  height: 30rem

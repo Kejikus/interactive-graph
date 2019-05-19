@@ -22,7 +22,7 @@ class Graph extends Component {
         };
         this.graphContainer = React.createRef();
         this.toolbar = React.createRef();
-        this.incidenceMatrix = props.incidenceMatrix ? props.incidenceMatrix : null;
+        this.incidenceMatrix = props.incidenceMatrix || null;
         $(document).on("keydown", (e) => {
             if (e.ctrlKey) {
                 if (e.which === 'D'.charCodeAt(0)) {
@@ -80,9 +80,7 @@ class Graph extends Component {
         });
 
         const recalculateNodeWeight = node => {
-            node.data('weight', node.connectedEdges().difference('.eh-ghost-edge').degreeCentrality({
-                root: node,
-                weight: edge => {
+            let weightObj = node.connectedEdges().difference('.eh-ghost-edge').difference(`[?oriented][source != "${node.id}"]`).min(edge => {
                     const srcX = edge.source().position().x;
                     const srcY = edge.source().position().y;
                     const tgtX = edge.target().position().x;
@@ -90,14 +88,16 @@ class Graph extends Component {
                     return Math.floor(Math.sqrt(
                         Math.pow(Math.abs(srcX - tgtX), 2) +
                         Math.pow(Math.abs(srcY - tgtY), 2)
-                    ));
-                },
-                alpha: 1,
-                directed: true
-            }).outdegree);
+                    ))
+            });
+            if (weightObj.ele) {
+                node.data('weight', weightObj.value);
+            } else {
+                node.data('weight', 0);
+            }
         };
 
-        this.cy.on('add position', 'node', event => {
+        this.cy.on('add position remove', 'node', event => {
             const node = event.target;
             recalculateNodeWeight(node);
             // console.log(node.neighbourhood());
@@ -109,6 +109,7 @@ class Graph extends Component {
             recalculateNodeWeight(edge.target());
         });
         this.ur = this.cy.undoRedo({
+            undoableDrag: true,
             stackSizeLimit: 10
         });
     }

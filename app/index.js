@@ -82,20 +82,20 @@ var index =
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./frontend_dev/js/index.jsx");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./dev/js/index.jsx");
 /******/ })
 /************************************************************************/
 /******/ ({
 
-/***/ "./frontend_dev/js/index.jsx":
-/*!***********************************!*\
-  !*** ./frontend_dev/js/index.jsx ***!
-  \***********************************/
+/***/ "./dev/js/index.jsx":
+/*!**************************!*\
+  !*** ./dev/js/index.jsx ***!
+  \**************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-eval("\n\nvar _electron = __webpack_require__(/*! electron */ \"electron\");\n\nfunction createWindow() {\n    var win = new _electron.BrowserWindow({\n        width: 1000,\n        height: 700,\n        minWidth: 1000\n    });\n    win.loadFile('app/index.html');\n}\n\n_electron.app.on('ready', createWindow);\n\n_electron.app.on('window-all-closed', function () {\n    _electron.app.quit();\n});\n\n//# sourceURL=webpack://%5Bname%5D/./frontend_dev/js/index.jsx?");
+eval("\n\nvar _electron = __webpack_require__(/*! electron */ \"electron\");\n\nfunction clearGraph() {}\n\nfunction openFile() {}\n\nfunction saveAsIncidenceMatrix() {}\n\nfunction saveAsAdjacencyMatrix() {}\n\nfunction saveAsEdgesVertices() {}\n\n// Display dialog box with instructions how to use this program\nfunction displayHelp() {}\n\n// Display dialog box with info about authors\nfunction displayAuthors() {}\n\nfunction createWindow() {\n    var win = new _electron.BrowserWindow({\n        width: 1000,\n        height: 700,\n        minWidth: 1000\n    });\n    win.loadFile('app/index.html');\n    _electron.Menu.setApplicationMenu(new _electron.Menu.buildFromTemplate([{\n        label: \"File\",\n        type: \"submenu\",\n        submenu: [{\n            label: \"New graph\",\n            accelerator: \"CommandOrControl+N\",\n            click: clearGraph\n        }, {\n            label: \"Open...\",\n            accelerator: \"CommandOrControl+O\",\n            click: openFile\n        }, {\n            label: \"Save as\",\n            type: \"submenu\",\n            submenu: [{\n                label: \"Incidence matrix\",\n                click: saveAsIncidenceMatrix\n            }, {\n                label: \"Adjacency matrix\",\n                click: saveAsAdjacencyMatrix\n            }, {\n                label: \"Edges/Vertices format\",\n                accelerator: \"CommandOrControl+S\",\n                click: saveAsEdgesVertices\n            }]\n        }, {\n            label: \"Exit\",\n            click: function click() {\n                return _electron.app.quit();\n            }\n        }]\n    }, {\n        label: \"Theory of graph tasks\",\n        type: \"submenu\",\n        submenu: [{\n            label: \"To be added\",\n            enabled: false\n        }]\n    }, {\n        label: \"About\",\n        type: \"submenu\",\n        submenu: [{\n            label: \"Help\",\n            accelerator: \"F1\",\n            click: displayHelp\n        }, {\n            label: \"Authors\",\n            click: displayAuthors\n        }]\n    }]));\n}\n\n_electron.app.on('ready', createWindow);\n\n_electron.app.on('window-all-closed', function () {\n    _electron.app.quit();\n});\n\n//# sourceURL=webpack://%5Bname%5D/./dev/js/index.jsx?");
 
 /***/ }),
 

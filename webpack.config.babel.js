@@ -4,13 +4,15 @@ import 'webpack'
 
 export default {
     entry: {
-        index: './frontend_dev/js/index.jsx'
+        index: './dev/js/index.jsx',
+        main: './dev/js/main.jsx'
     },
     output: {
-        path: `${__dirname}/core/static/js`,
+        path: `${__dirname}/app`,
         filename: '[name].js',
         library: '[name]'
     },
+    target: 'electron-main',
 
     mode: 'development',
 
@@ -54,7 +56,7 @@ export default {
                         loader: "sass-loader",
                         options: {
                             includePaths: [
-                                path.resolve(__dirname, "./frontend_dev/styles"),
+                                path.resolve(__dirname, "./dev/styles"),
                                 path.resolve(__dirname, "./node_modules/materialize-css/sass")
                             ]
                         }

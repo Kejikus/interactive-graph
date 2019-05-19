@@ -27,7 +27,7 @@ export default {
             {
                 test: /\.jsx?$/,
                 include: [
-                    path.resolve(__dirname, "frontend_dev")
+                    path.resolve(__dirname, "dev")
                 ],
                 use: {
                     loader: 'babel-loader',

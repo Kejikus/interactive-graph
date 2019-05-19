@@ -1,45 +1,113 @@
-import {app, BrowserWindow, Menu} from "electron";
+import {app, BrowserWindow, Menu, dialog} from "electron";
 
 
 function clearGraph() {
-
+    win.webContents.send("clear-graph", {});
 }
 
 function openFile() {
+    dialog.showOpenDialog({
+        title: "Select graph file",
+        properties: ["openFile"],
+        filters: [
+            {name: "Edges/Vertices format", extensions: ["evf"]},
+            {name: "Incidence matrix", extensions: ["imgd"]},
+            {name: "Adjacency matrix", extensions: ["amgd"]},
+            {name: "All files", extensions: ["*"]}
+        ]
+    }, filePaths => {
+        if (filePaths === undefined) {
+            console.log("Nothing selected");
+            return;
+        }
 
+        console.log(filePaths);
+    });
 }
 
 function saveAsIncidenceMatrix() {
+    dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+        filters: [
+            {name: "Incidence matrix", extensions: ["imgd"]},
+            {name: "All files", extensions: ["*"]}
+        ]
+    }, filename => {
+        if (filename === undefined) {
+            console.log("Nothing selected");
+            return;
+        }
 
+        console.log(filename);
+    });
 }
 
 function saveAsAdjacencyMatrix() {
+    dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+        filters: [
+            {name: "Adjacency matrix", extensions: ["amgd"]},
+            {name: "All files", extensions: ["*"]}
+        ]
+    }, filename => {
+        if (filename === undefined) {
+            console.log("Nothing selected");
+            return;
+        }
 
+        console.log(filename);
+    });
 }
 
 function saveAsEdgesVertices() {
+    dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+        filters: [
+            {name: "Edges/Vertices format", extensions: ["evf"]},
+            {name: "All files", extensions: ["*"]}
+        ]
+    }, filename => {
+        if (filename === undefined) {
+            console.log("Nothing selected");
+            return;
+        }
 
+        console.log(filename);
+    });
 }
 
 // Display dialog box with instructions how to use this program
 function displayHelp() {
-
+    dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: "How to use this application",
+        message: "To be filled..."
+    }, () => {});
 }
 
 // Display dialog box with info about authors
 function displayAuthors() {
-
+    dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: "Authors",
+        message: "To be filled..."
+    }, () => {});
 }
 
-
+let win;
 function createWindow() {
-    let win = new BrowserWindow({
+    win = new BrowserWindow({
         width: 1000,
         height: 700,
-        minWidth: 1000
+        minWidth: 1000,
+        webPreferences: {
+          nodeIntegration: true
+        }
     });
     win.loadFile('app/index.html');
-    Menu.setApplicationMenu(new Menu.buildFromTemplate([
+    let mainMenu = new Menu.buildFromTemplate([
         {
             label: "File",
             type: "submenu",
@@ -103,8 +171,13 @@ function createWindow() {
                     click: displayAuthors
                 }
             ]
+        },
+        {
+            label: "Show dev toolbar",
+            role: "toggledevtools"
         }
-    ]));
+    ]);
+    Menu.setApplicationMenu(mainMenu);
 }
 
 app.on('ready', createWindow);

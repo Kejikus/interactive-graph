@@ -1,5 +1,5 @@
-import path from 'path'
-import 'webpack'
+import path from 'path';
+import webpack from 'webpack';
 
 
 export default {
@@ -12,7 +12,7 @@ export default {
         filename: '[name].js',
         library: '[name]'
     },
-    target: 'electron-main',
+    target: 'electron-renderer',
 
     mode: 'development',
 

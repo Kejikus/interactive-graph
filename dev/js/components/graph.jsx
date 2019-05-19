@@ -1,3 +1,4 @@
+import {ipcRenderer} from 'electron';
 import React, { Component } from 'react';
 import cytoscape from 'cytoscape';
 import edgehandles from 'cytoscape-edgehandles';
@@ -52,9 +53,10 @@ class Graph extends Component {
             container: this.graphContainer.current,
             style: graphCss
         });
-        this.cy.style(this.cy.style()).fromJson([
+        // Concat two list of styles
+        let concatStyle = this.cy.style().json().concat([
             {
-                selector: 'node[label][weight]',
+                selector: '[label][weight]',
                 style: {
                     'label': (ele) => {
                         if (ele.data().label && ele.data().weight) {
@@ -70,6 +72,7 @@ class Graph extends Component {
                 }
             }
         ]);
+        this.cy.style().fromJson(concatStyle);
         this.cy.on('select', 'node', event => {
             let node = event.target;
             node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).addClass('node-selected');
@@ -112,6 +115,8 @@ class Graph extends Component {
             undoableDrag: true,
             stackSizeLimit: 10
         });
+
+        ipcRenderer.on("clear-graph", () => this.clear());
     }
 
     resetMode() {
@@ -130,8 +135,7 @@ class Graph extends Component {
             case 'add-edge': {
                 if (this.eh !== null) {
                     this.eh.disableDrawMode();
-                    this.eh.destroy();
-                    this.eh = null;
+                    this.eh.disable();
                 }
                 this.toolbar.current.showMessage('');
                 this.toolbar.current.removeAllFields();
@@ -228,11 +232,22 @@ class Graph extends Component {
                 ghostEdgeParams: ghostEdgeObj
             };
 
-            this.eh = cy.edgehandles(ehOptions);
+            if (!this.eh) {
+                this.eh = cy.edgehandles(ehOptions);
+            } else {
+                Object.assign(this.eh.options, ehOptions); // Update existing options
+            }
+            console.log(this.eh);
+            this.eh.enable();
             this.eh.enableDrawMode();
         } else {
             resetMode();
         }
+    }
+
+    clear() {
+        console.log('Got it');
+        this.cy.remove('*');
     }
 
     render() {

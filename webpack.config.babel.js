@@ -13,6 +13,7 @@ export default {
         library: '[name]'
     },
     target: 'electron-renderer',
+    devtool: 'source-map',
 
     mode: 'development',
 

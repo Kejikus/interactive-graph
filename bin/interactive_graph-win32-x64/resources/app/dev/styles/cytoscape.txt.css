@@ -1,11 +1,3 @@
-node[label] {
-    label: data(label);
-}
-
-node[weight] {
-    label: data(weight);
-}
-
 node.ghost {
     label: none;
     background-color: rgba(123, 123, 123, 0.3);
@@ -30,8 +22,8 @@ edge.eh-ghost-edge.eh-preview-active {
     width: 0;
 }
 
-edge[label] {
-    label: data(label);
+edge[weight] {
+    label: data(weight);
 }
 
 edge[?oriented] {

@@ -1,3 +1,4 @@
+import {ipcRenderer} from 'electron';
 import React, { Component } from 'react';
 import * as ReactDOM from "react-dom";
 
@@ -5,6 +6,8 @@ import '../styles/index.sass';
 import "materialize-css";
 
 import Graph from './components/graph';
+
+ipcRenderer.on("log", (sender, msg) => console.log(msg));
 
 class IncidenceMatrix extends Component {
     render() {

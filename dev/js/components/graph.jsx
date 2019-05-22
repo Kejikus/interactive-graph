@@ -117,6 +117,40 @@ class Graph extends Component {
         });
 
         ipcRenderer.on("clear-graph", () => this.clear());
+        ipcRenderer.on("set-graph", (sender, obj) => {
+            // console.log(obj);
+            if (obj.errors.length > 0) {
+                this.toolbar.current.showMessage('File corrupted, check console');
+                console.log(obj.errors);
+                return;
+            }
+            this.clear();
+            this.ur.reset();
+            this.cy.json({
+                elements: {
+                    nodes: Object.values(obj.nodes),
+                    edges: Object.values(obj.edges)
+                }
+            });
+            this.state.lastId = obj.lastId;
+
+            let layout = this.cy.filter('node[?layout]').layout({
+                name: 'circle'
+            });
+            layout.run();
+        });
+        ipcRenderer.on("request-save-collection", () => {
+            ipcRenderer.send("send-save-collection", {
+                nodes: this.cy.nodes().jsons(),
+                edges: this.cy.edges().jsons()
+            });
+        });
+        ipcRenderer.on("save-error", (sender, err) => {
+            this.toolbar.current.showMessage("Error saving file: " + err);
+        });
+        ipcRenderer.on("save-success", () => {
+            this.toolbar.current.showMessage("File saved");
+        });
     }
 
     resetMode() {
@@ -168,7 +202,7 @@ class Graph extends Component {
                     if (label)
                         data.label = label;
 
-                    ur.do('add',{
+                    ur.do('add', {
                         group: 'nodes',
                         data: {
                             id: ++state.lastId,
@@ -202,7 +236,7 @@ class Graph extends Component {
                 return {
                     id: ++state.lastId,
                     data: {
-                        label: labelInput.current.value,
+                        weight: weightInput.current.value || 1,
                         oriented: checkboxIsArrow.current.checked
                     }
                 }
@@ -210,7 +244,7 @@ class Graph extends Component {
             let ghostEdgeObj = () => {
                 return {
                     data: {
-                        label: labelInput.current.value,
+                        weight: weightInput.current.value || 1,
                         oriented: checkboxIsArrow.current.checked
                     }
                 }
@@ -219,8 +253,8 @@ class Graph extends Component {
             resetMode();
             state.mode = 'add-edge';
 
-            let labelInput = this.toolbar.current
-                .addField('text', 'edge-label', '', 'Edge label', true);
+            let weightInput = this.toolbar.current
+                .addField('number', 'edge-weight', '', 'Edge weight', true);
             let checkboxIsArrow = this.toolbar.current.addField('checkbox', 'edge-is-arrow', 'Oriented');
 
             // cytoscape-edgehandles options

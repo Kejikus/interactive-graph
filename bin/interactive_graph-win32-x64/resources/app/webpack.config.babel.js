@@ -1,18 +1,19 @@
-import path from 'path'
-import 'webpack'
+import path from 'path';
+import webpack from 'webpack';
 
 
 export default {
     entry: {
-        index: './frontend_dev/js/index.jsx',
-        main: './frontend_dev/js/main.jsx'
+        index: './dev/js/index.jsx',
+        main: './dev/js/main.jsx'
     },
     output: {
         path: `${__dirname}/app`,
         filename: '[name].js',
         library: '[name]'
     },
-    target: 'electron-main',
+    target: 'electron-renderer',
+    devtool: 'source-map',
 
     mode: 'development',
 
@@ -27,7 +28,7 @@ export default {
             {
                 test: /\.jsx?$/,
                 include: [
-                    path.resolve(__dirname, "frontend_dev")
+                    path.resolve(__dirname, "dev")
                 ],
                 use: {
                     loader: 'babel-loader',
@@ -56,7 +57,7 @@ export default {
                         loader: "sass-loader",
                         options: {
                             includePaths: [
-                                path.resolve(__dirname, "./frontend_dev/styles"),
+                                path.resolve(__dirname, "./dev/styles"),
                                 path.resolve(__dirname, "./node_modules/materialize-css/sass")
                             ]
                         }

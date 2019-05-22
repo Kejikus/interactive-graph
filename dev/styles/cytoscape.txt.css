@@ -22,8 +22,8 @@ edge.eh-ghost-edge.eh-preview-active {
     width: 0;
 }
 
-edge[label] {
-    label: data(label);
+edge[weight] {
+    label: data(weight);
 }
 
 edge[?oriented] {

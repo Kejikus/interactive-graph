@@ -1,3 +1,4 @@
+import {ipcRenderer} from 'electron';
 import React, { Component } from 'react';
 import cytoscape from 'cytoscape';
 import edgehandles from 'cytoscape-edgehandles';
@@ -22,7 +23,7 @@ class Graph extends Component {
         };
         this.graphContainer = React.createRef();
         this.toolbar = React.createRef();
-        this.incidenceMatrix = props.incidenceMatrix ? props.incidenceMatrix : null;
+        this.incidenceMatrix = props.incidenceMatrix || null;
         $(document).on("keydown", (e) => {
             if (e.ctrlKey) {
                 if (e.which === 'D'.charCodeAt(0)) {
@@ -52,9 +53,10 @@ class Graph extends Component {
             container: this.graphContainer.current,
             style: graphCss
         });
-        this.cy.style(this.cy.style()).fromJson([
+        // Concat two list of styles
+        let concatStyle = this.cy.style().json().concat([
             {
-                selector: 'node[label][weight]',
+                selector: '[label][weight]',
                 style: {
                     'label': (ele) => {
                         if (ele.data().label && ele.data().weight) {
@@ -70,6 +72,7 @@ class Graph extends Component {
                 }
             }
         ]);
+        this.cy.style().fromJson(concatStyle);
         this.cy.on('select', 'node', event => {
             let node = event.target;
             node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).addClass('node-selected');
@@ -80,9 +83,7 @@ class Graph extends Component {
         });
 
         const recalculateNodeWeight = node => {
-            node.data('weight', node.connectedEdges().difference('.eh-ghost-edge').degreeCentrality({
-                root: node,
-                weight: edge => {
+            let weightObj = node.connectedEdges().difference('.eh-ghost-edge').difference(`[?oriented][source != "${node.id}"]`).min(edge => {
                     const srcX = edge.source().position().x;
                     const srcY = edge.source().position().y;
                     const tgtX = edge.target().position().x;
@@ -90,14 +91,16 @@ class Graph extends Component {
                     return Math.floor(Math.sqrt(
                         Math.pow(Math.abs(srcX - tgtX), 2) +
                         Math.pow(Math.abs(srcY - tgtY), 2)
-                    ));
-                },
-                alpha: 1,
-                directed: true
-            }).outdegree);
+                    ))
+            });
+            if (weightObj.ele) {
+                node.data('weight', weightObj.value);
+            } else {
+                node.data('weight', 0);
+            }
         };
 
-        this.cy.on('add position', 'node', event => {
+        this.cy.on('add position remove', 'node', event => {
             const node = event.target;
             recalculateNodeWeight(node);
             // console.log(node.neighbourhood());
@@ -109,7 +112,44 @@ class Graph extends Component {
             recalculateNodeWeight(edge.target());
         });
         this.ur = this.cy.undoRedo({
+            undoableDrag: true,
             stackSizeLimit: 10
+        });
+
+        ipcRenderer.on("clear-graph", () => this.clear());
+        ipcRenderer.on("set-graph", (sender, obj) => {
+            // console.log(obj);
+            if (obj.errors.length > 0) {
+                this.toolbar.current.showMessage('File corrupted, check console');
+                console.log(obj.errors);
+                return;
+            }
+            this.clear();
+            this.ur.reset();
+            this.cy.json({
+                elements: {
+                    nodes: Object.values(obj.nodes),
+                    edges: Object.values(obj.edges)
+                }
+            });
+            this.state.lastId = obj.lastId;
+
+            let layout = this.cy.filter('node[?layout]').layout({
+                name: 'circle'
+            });
+            layout.run();
+        });
+        ipcRenderer.on("request-save-collection", () => {
+            ipcRenderer.send("send-save-collection", {
+                nodes: this.cy.nodes().jsons(),
+                edges: this.cy.edges().jsons()
+            });
+        });
+        ipcRenderer.on("save-error", (sender, err) => {
+            this.toolbar.current.showMessage("Error saving file: " + err);
+        });
+        ipcRenderer.on("save-success", () => {
+            this.toolbar.current.showMessage("File saved");
         });
     }
 
@@ -129,8 +169,7 @@ class Graph extends Component {
             case 'add-edge': {
                 if (this.eh !== null) {
                     this.eh.disableDrawMode();
-                    this.eh.destroy();
-                    this.eh = null;
+                    this.eh.disable();
                 }
                 this.toolbar.current.showMessage('');
                 this.toolbar.current.removeAllFields();
@@ -163,7 +202,7 @@ class Graph extends Component {
                     if (label)
                         data.label = label;
 
-                    ur.do('add',{
+                    ur.do('add', {
                         group: 'nodes',
                         data: {
                             id: ++state.lastId,
@@ -197,7 +236,7 @@ class Graph extends Component {
                 return {
                     id: ++state.lastId,
                     data: {
-                        label: labelInput.current.value,
+                        weight: weightInput.current.value || 1,
                         oriented: checkboxIsArrow.current.checked
                     }
                 }
@@ -205,7 +244,7 @@ class Graph extends Component {
             let ghostEdgeObj = () => {
                 return {
                     data: {
-                        label: labelInput.current.value,
+                        weight: weightInput.current.value || 1,
                         oriented: checkboxIsArrow.current.checked
                     }
                 }
@@ -214,8 +253,8 @@ class Graph extends Component {
             resetMode();
             state.mode = 'add-edge';
 
-            let labelInput = this.toolbar.current
-                .addField('text', 'edge-label', '', 'Edge label', true);
+            let weightInput = this.toolbar.current
+                .addField('number', 'edge-weight', '', 'Edge weight', true);
             let checkboxIsArrow = this.toolbar.current.addField('checkbox', 'edge-is-arrow', 'Oriented');
 
             // cytoscape-edgehandles options
@@ -227,11 +266,22 @@ class Graph extends Component {
                 ghostEdgeParams: ghostEdgeObj
             };
 
-            this.eh = cy.edgehandles(ehOptions);
+            if (!this.eh) {
+                this.eh = cy.edgehandles(ehOptions);
+            } else {
+                Object.assign(this.eh.options, ehOptions); // Update existing options
+            }
+            console.log(this.eh);
+            this.eh.enable();
             this.eh.enableDrawMode();
         } else {
             resetMode();
         }
+    }
+
+    clear() {
+        console.log('Got it');
+        this.cy.remove('*');
     }
 
     render() {

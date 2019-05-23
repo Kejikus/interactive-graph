@@ -82,35 +82,35 @@ class Graph extends Component {
             node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).removeClass('node-selected');
         });
 
-        const recalculateNodeWeight = node => {
-            let weightObj = node.connectedEdges().difference('.eh-ghost-edge').difference(`[?oriented][source != "${node.id}"]`).min(edge => {
-                    const srcX = edge.source().position().x;
-                    const srcY = edge.source().position().y;
-                    const tgtX = edge.target().position().x;
-                    const tgtY = edge.target().position().y;
-                    return Math.floor(Math.sqrt(
-                        Math.pow(Math.abs(srcX - tgtX), 2) +
-                        Math.pow(Math.abs(srcY - tgtY), 2)
-                    ))
-            });
-            if (weightObj.ele) {
-                node.data('weight', weightObj.value);
-            } else {
-                node.data('weight', 0);
-            }
-        };
-
-        this.cy.on('add position remove', 'node', event => {
-            const node = event.target;
-            recalculateNodeWeight(node);
-            // console.log(node.neighbourhood());
-            node.neighbourhood().filter('node').map(node => recalculateNodeWeight(node));
-        });
-        this.cy.on('add remove', 'edge', event => {
-            const edge = event.target;
-            recalculateNodeWeight(edge.source());
-            recalculateNodeWeight(edge.target());
-        });
+        // const recalculateNodeWeight = node => {
+        //     let weightObj = node.connectedEdges().difference('.eh-ghost-edge').difference(`[?oriented][source != "${node.id}"]`).min(edge => {
+        //             const srcX = edge.source().position().x;
+        //             const srcY = edge.source().position().y;
+        //             const tgtX = edge.target().position().x;
+        //             const tgtY = edge.target().position().y;
+        //             return Math.floor(Math.sqrt(
+        //                 Math.pow(Math.abs(srcX - tgtX), 2) +
+        //                 Math.pow(Math.abs(srcY - tgtY), 2)
+        //             ))
+        //     });
+        //     if (weightObj.ele) {
+        //         node.data('weight', weightObj.value);
+        //     } else {
+        //         node.data('weight', 0);
+        //     }
+        // };
+        //
+        // this.cy.on('add position remove', 'node', event => {
+        //     const node = event.target;
+        //     recalculateNodeWeight(node);
+        //     // console.log(node.neighbourhood());
+        //     node.neighbourhood().filter('node').map(node => recalculateNodeWeight(node));
+        // });
+        // this.cy.on('add remove', 'edge', event => {
+        //     const edge = event.target;
+        //     recalculateNodeWeight(edge.source());
+        //     recalculateNodeWeight(edge.target());
+        // });
         this.ur = this.cy.undoRedo({
             undoableDrag: true,
             stackSizeLimit: 10

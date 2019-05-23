@@ -131,7 +131,7 @@ function openFile() {
     _electron.dialog.showOpenDialog({
         title: "Select graph file",
         properties: ["openFile"],
-        filters: [{ name: "Edges/Vertices format", extensions: ["evf"] }, { name: "Incidence matrix", extensions: ["imgd"] }, { name: "Adjacency matrix", extensions: ["amgd"] }, { name: "All files", extensions: ["*"] }]
+        filters: [{ name: "All formats", extensions: ["evf", "imgd", "amgd"] }, { name: "Edges/Vertices format", extensions: ["evf"] }, { name: "Incidence matrix", extensions: ["imgd"] }, { name: "Adjacency matrix", extensions: ["amgd"] }]
     }, function (filePaths) {
         console.log(filePaths);
         if (filePaths === undefined) {
@@ -140,9 +140,13 @@ function openFile() {
         }
 
         var filename = filePaths[0];
-        if (_path2.default.extname(filename) === '.evf') {
+        var decodeFunc = null;
+
+        if (_path2.default.extname(filename) === '.evf') decodeFunc = _saveFileTools.evfDecode;else if (_path2.default.extname(filename) === '.imgd') decodeFunc = _saveFileTools.imgdDecode;else if (_path2.default.extname(filename) === '.amgd') decodeFunc = _saveFileTools.amgdDecode;
+
+        if (decodeFunc !== null) {
             _fs2.default.readFile(filename, 'utf8', function (err, data) {
-                var graphData = (0, _saveFileTools.evfDecode)(data);
+                var graphData = decodeFunc(data);
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
             });
@@ -157,7 +161,14 @@ function saveAsIncidenceMatrix() {
     }, function (filename) {
         if (filename === undefined) return;
 
-        console.log(filename);
+        ipcSend("request-save-collection", null);
+        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
+            var fileObj = (0, _saveFileTools.imgdEncode)(obj);
+            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+                if (err) return ipcSend("save-error", err);
+                ipcSend("save-success", null);
+            });else ipcSend("save-error", 'Error saving in .imgd format');
+        });
     });
 }
 
@@ -168,7 +179,14 @@ function saveAsAdjacencyMatrix() {
     }, function (filename) {
         if (filename === undefined) return;
 
-        console.log(filename);
+        ipcSend("request-save-collection", null);
+        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
+            var fileObj = (0, _saveFileTools.amgdEncode)(obj);
+            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+                if (err) return ipcSend("save-error", err);
+                ipcSend("save-success", null);
+            });else ipcSend("save-error", 'Error saving in .imgd format');
+        });
     });
 }
 
@@ -185,7 +203,7 @@ function saveAsEdgesVertices() {
             if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
                 if (err) return ipcSend("save-error", err);
                 ipcSend("save-success", null);
-            });
+            });else ipcSend("save-error", 'Error saving in .evf format');
         });
     });
 }
@@ -301,6 +319,10 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
+var _stringify = __webpack_require__(/*! babel-runtime/core-js/json/stringify */ "./node_modules/babel-runtime/core-js/json/stringify.js");
+
+var _stringify2 = _interopRequireDefault(_stringify);
+
 var _typeof2 = __webpack_require__(/*! babel-runtime/helpers/typeof */ "./node_modules/babel-runtime/helpers/typeof.js");
 
 var _typeof3 = _interopRequireDefault(_typeof2);
@@ -322,13 +344,16 @@ var _raw = __webpack_require__(/*! babel-runtime/core-js/string/raw */ "./node_m
 var _raw2 = _interopRequireDefault(_raw);
 
 var _templateObject = (0, _taggedTemplateLiteral3.default)(['Edgess*{s*(?<content>[^}]*)s*}'], ['Edges\\s*{\\s*(?<content>[^}]*)\\s*}']),
-    _templateObject2 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<edgeId>d+)((?<edgeWeight>-?d+),(?<edgeSourceId>d+),(?<edgeTargetId>d+),(?<edgeDirected>1|0|-1)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<edgeId>\\d+)\\((?<edgeWeight>-?\\d+),(?<edgeSourceId>\\d+),(?<edgeTargetId>\\d+),(?<edgeDirected>1|0|-1)\\))']),
+    _templateObject2 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<edgeId>d+)((?<edgeWeight>d+(?:.d+)?),(?<edgeSourceId>d+),(?<edgeTargetId>d+),(?<edgeDirected>1|0)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<edgeId>\\d+)\\((?<edgeWeight>\\d+(?:\\.\\d+)?),(?<edgeSourceId>\\d+),(?<edgeTargetId>\\d+),(?<edgeDirected>1|0)\\))']),
     _templateObject3 = (0, _taggedTemplateLiteral3.default)(['Verticess*{s*(?<content>[^}]*)s*}'], ['Vertices\\s*{\\s*(?<content>[^}]*)\\s*}']),
-    _templateObject4 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<vertexId>d+)((?<vertexX>-?d+),(?<vertexY>-?d+)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<vertexId>\\d+)\\((?<vertexX>-?\\d+),(?<vertexY>-?\\d+)\\))']);
+    _templateObject4 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<vertexId>d+)((?<vertexX>-?d+(?:.d+)?),(?<vertexY>-?d+(?:.d+)?)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<vertexId>\\d+)\\((?<vertexX>-?\\d+(?:\\.\\d+)?),(?<vertexY>-?\\d+(?:\\.\\d+)?)\\))']);
 
 exports.evfDecode = evfDecode;
 exports.evfEncode = evfEncode;
 exports.imgdDecode = imgdDecode;
+exports.imgdEncode = imgdEncode;
+exports.amgdDecode = amgdDecode;
+exports.amgdEncode = amgdEncode;
 
 var _xregexp = __webpack_require__(/*! xregexp */ "./node_modules/xregexp/lib/index.js");
 
@@ -338,11 +363,17 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var r = _raw2.default;
 
+// Every read function:
+// - accepts only raw, cleaned from comments, string with file contents
+// - returns {edges: {}, nodes: {}, errors: [], lastId: int} object
+// Every write function
+// - accepts a collection {nodes: [], edges: []} object
+// - returns {error: bool, content: str} object
+
 function evfDecode(data) {
     // Decode Edges/Vertices format
-    // Returns object {nodes: [...nodeObj], edges: [...edgeObj], errors: [...str], lastId: int}
     // Nodes and edges are ready to be added in the graph and are not colliding
-    // lastId - greatest id from all objects
+    // Edge weight can't be < 0
 
     var edgesGroup = (0, _xregexp2.default)(r(_templateObject), 's');
     var edgeEntry = (0, _xregexp2.default)(r(_templateObject2), 'gy');
@@ -367,8 +398,8 @@ function evfDecode(data) {
         _xregexp2.default.forEach(verticesText, vertexEntry, function (match, i) {
             console.log(match);
             lastIdx = i;
-            var x = parseInt(match.vertexX);
-            var y = parseInt(match.vertexY);
+            var x = parseFloat(match.vertexX);
+            var y = parseFloat(match.vertexY);
             var id = match.vertexId;
             if (!usedIds.includes(id)) {
                 nodes[id] = {
@@ -403,7 +434,7 @@ function evfDecode(data) {
             _lastIdx = i;
             var source = null;
             var target = null;
-            var oriented = 0;
+            var oriented = false;
             var edgeId = match.edgeId;
 
             var edgeIdUsed = usedIds.includes(edgeId);
@@ -411,19 +442,9 @@ function evfDecode(data) {
             var tgtIdUsed = usedIds.includes(target) && nodes[target] === undefined;
 
             if (!edgeIdUsed && !srcIdUsed && !tgtIdUsed) {
-                if (match.edgeDirected === 1) {
-                    source = match.edgeSourceId;
-                    target = match.edgeTargetId;
-                    oriented = true;
-                } else if (match.edgeDirected === -1) {
-                    source = match.edgeTargetId;
-                    target = match.edgeSourceId;
-                    oriented = true;
-                } else {
-                    source = match.edgeSourceId;
-                    target = match.edgeTargetId;
-                    oriented = false;
-                }
+                source = match.edgeSourceId;
+                target = match.edgeTargetId;
+                oriented = match.edgeDirected === '1';
                 if (nodes[source] === undefined) {
                     nodes[source] = {
                         group: 'nodes',
@@ -458,7 +479,7 @@ function evfDecode(data) {
                     group: 'edges',
                     data: {
                         id: edgeId,
-                        weight: parseInt(match.edgeWeight),
+                        weight: parseFloat(match.edgeWeight),
                         oriented: oriented,
                         source: source,
                         target: target
@@ -494,8 +515,6 @@ function evfDecode(data) {
 
 function evfEncode(collection) {
     // Encode given node and edge objects in the .evf format
-    // collection - {nodes: [...nodeObj], edges: [..edgeObj]}
-    // Return object {error: bool, content: str}
     // content - string containing .evf file contents
     // error - flag if there were an error, if it's set, content will be empty
 
@@ -576,25 +595,351 @@ function imgdDecode(data) {
     // imgd - Incidence Matrix Graph Data
     // Treated as JSON with condition that all JSON is a rectangle array
     // Row - node, column - edge
-    // Return {error: bool, content: str}
 
-    var error = { error: true, content: "" };
+    var errors = [];
+    var nodes = {};
+    var edges = {};
+    var lastId = -1;
+
+    // There are many points with return statements, so this would lessen the code
+    var retObj = function retObj() {
+        return {
+            errors: errors,
+            nodes: nodes,
+            edges: edges,
+            lastId: lastId
+        };
+    };
 
     var matrix = void 0;
     try {
         var formatError = false;
+        var rowLength = -1;
         matrix = JSON.parse(data, function (k, v) {
-            if (typeof v === 'number' && (0, _isInteger2.default)(v)) return v;
-            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
-                if (k !== '' && Array.isArray(v[0])) {
+            if (formatError) return v;
+            if (typeof v === 'number') {
+                if (!((0, _isInteger2.default)(v) && v >= -1 && v <= 1)) {
                     formatError = true;
+                    errors.push('Error parsing file - \'' + v + '\' is not integer or not in [-1, 0, 1]');
+                }
+                return v;
+            }
+            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
+                if (k !== '' && typeof v[0] !== 'number') {
+                    formatError = true;
+                    errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+                }
+                if (k !== '' && rowLength !== -1 && v.length !== rowLength) {
+                    formatError = true;
+                    errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+                }
+                if (k !== '') rowLength = v.length;
+                return v;
+            }
+            formatError = true;
+            errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+            return v;
+        });
+        if (formatError) return retObj();
+    } catch (e) {
+        errors.push('Error parsing file - not valid format - check braces and commas');
+        return retObj();
+    }
+
+    var nodesCount = matrix.length;
+    var edgesCount = matrix[0].length;
+    for (var i = 0; i < nodesCount; i++) {
+        nodes[i] = {
+            group: 'nodes',
+            data: {
+                id: ++lastId,
+                layout: true
+            },
+            position: {
+                x: 0,
+                y: 0
+            }
+        };
+    }
+    for (var _i = 0; _i < edgesCount; _i++) {
+        var source = null;
+        var target = null;
+        var directed = false;
+        for (var j = 0; j < nodesCount; j++) {
+            if (matrix[j][_i] === 1) {
+                if (source === null) {
+                    source = j;
+                } else if (target === null) {
+                    target = j;
+                } else {
+                    errors.push('Hypergraphs are not (yet) supported');
+                    return retObj();
+                }
+            } else if (matrix[j][_i] === -1) {
+                if (source === null) {
+                    source = j;
+                    directed = true;
+                } else if (target === null && !directed) {
+                    target = source;
+                    source = j;
+                    directed = true;
+                } else {
+                    errors.push('Hypergraphs are not (yet) supported');
+                    return retObj();
                 }
             }
-        });
-        if (formatError) return error;
-    } catch (e) {
-        return error;
+        }
+        if (source === null) {
+            errors.push('There are an edge that is not connected to any node (column with zeros)');
+            continue;
+        }
+        if (target === null) target = source;
+        var id = ++lastId;
+        edges[id] = {
+            group: 'edges',
+            data: {
+                id: id,
+                weight: 1,
+                source: source,
+                target: target,
+                oriented: directed
+            }
+        };
     }
+
+    return retObj();
+}
+
+function imgdEncode(collection) {
+    var nodesArr = collection.nodes;
+    var edgesArr = collection.edges;
+
+    var nodesCount = nodesArr.length;
+    var edgesCount = edgesArr.length;
+
+    var matrix = [];
+    for (var i = 0; i < nodesCount; i++) {
+        matrix.push([]);
+    }
+    var _loop = function _loop(_i2) {
+        var source = edgesArr[_i2].data.source;
+        var target = edgesArr[_i2].data.target;
+        var directed = edgesArr[_i2].data.oriented;
+        var sourceIdx = nodesArr.findIndex(function (item) {
+            return item.data.id === source;
+        });
+        var targetIdx = nodesArr.findIndex(function (item) {
+            return item.data.id === target;
+        });
+
+        for (var j = 0; j < nodesCount; j++) {
+            if (j !== sourceIdx && j !== targetIdx) {
+                matrix[j].push(0);
+            } else if (directed && (j === sourceIdx || j === sourceIdx && sourceIdx === targetIdx)) {
+                matrix[j].push(-1);
+            } else {
+                matrix[j].push(1);
+            }
+        }
+    };
+
+    for (var _i2 = 0; _i2 < edgesCount; _i2++) {
+        _loop(_i2);
+    }
+
+    return {
+        error: false,
+        content: (0, _stringify2.default)(matrix)
+    };
+}
+
+function amgdDecode(data) {
+    // amgd - Adjacency Matrix Graph Data
+    // Treated as JSON with condition that all JSON is a square array
+
+    var errors = [];
+    var nodes = {};
+    var edges = {};
+    var lastId = -1;
+
+    // There are many points with return statements, so this would lessen the code
+    var retObj = function retObj() {
+        return {
+            errors: errors,
+            nodes: nodes,
+            edges: edges,
+            lastId: lastId
+        };
+    };
+
+    var matrix = void 0;
+    try {
+        var formatError = false;
+        var rowLength = -1;
+        matrix = JSON.parse(data, function (k, v) {
+            if (formatError) return v;
+            if (typeof v === 'number') {
+                if (!(0, _isInteger2.default)(v)) {
+                    formatError = true;
+                    errors.push('Error parsing file - \'' + v + '\' is not integer');
+                }
+                return v;
+            }
+            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
+                if (k !== '' && typeof v[0] !== 'number') {
+                    formatError = true;
+                    errors.push('Error parsing file - file must be a square array of numbers');
+                }
+                if (rowLength !== -1 && v.length !== rowLength) {
+                    formatError = true;
+                    errors.push('Error parsing file - file must be a square array of numbers');
+                }
+                rowLength = v.length;
+                return v;
+            }
+            formatError = true;
+            errors.push('Error parsing file - file must be a square array of numbers');
+            return v;
+        });
+        if (formatError) return retObj();
+    } catch (e) {
+        errors.push('Error parsing file - not valid format - check braces and commas');
+        return retObj();
+    }
+
+    var nodesCount = matrix.length;
+    for (var i = 0; i < nodesCount; i++) {
+        nodes[i] = {
+            group: 'nodes',
+            data: {
+                id: ++lastId,
+                layout: true
+            },
+            position: {
+                x: 0,
+                y: 0
+            }
+        };
+    }
+    for (var _i3 = 0; _i3 < nodesCount; _i3++) {
+        for (var j = _i3; j < nodesCount; j++) {
+            var edgeCountSource = matrix[_i3][j];
+            var edgeCountTarget = matrix[j][_i3];
+            if (edgeCountSource !== 0 || edgeCountTarget !== 0) {
+                if (_i3 === j) {
+                    // Loop edges
+                    while (edgeCountSource >= 2) {
+                        var edgeId = ++lastId;
+                        edges[edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                weight: 1,
+                                source: _i3,
+                                target: j,
+                                oriented: false
+                            }
+                        };
+                        edgeCountSource -= 2;
+                    }
+                    if (edgeCountSource === 1) {
+                        var _edgeId = ++lastId;
+                        edges[_edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: _edgeId,
+                                weight: 1,
+                                source: _i3,
+                                target: j,
+                                oriented: true
+                            }
+                        };
+                        edgeCountSource--;
+                    }
+                } else {
+                    while (edgeCountSource > 0 && edgeCountTarget > 0) {
+                        var _edgeId2 = ++lastId;
+                        edges[_edgeId2] = {
+                            group: 'edges',
+                            data: {
+                                id: _edgeId2,
+                                weight: 1,
+                                source: _i3,
+                                target: j,
+                                oriented: false
+                            }
+                        };
+                        edgeCountSource--;
+                        edgeCountTarget--;
+                    }
+                    while (edgeCountSource > 0) {
+                        var _edgeId3 = ++lastId;
+                        edges[_edgeId3] = {
+                            group: 'edges',
+                            data: {
+                                id: _edgeId3,
+                                weight: 1,
+                                source: _i3,
+                                target: j,
+                                oriented: true
+                            }
+                        };
+                        edgeCountSource--;
+                    }
+                    while (edgeCountTarget > 0) {
+                        var _edgeId4 = ++lastId;
+                        edges[_edgeId4] = {
+                            group: 'edges',
+                            data: {
+                                id: _edgeId4,
+                                weight: 1,
+                                source: j,
+                                target: _i3,
+                                oriented: true
+                            }
+                        };
+                        edgeCountTarget--;
+                    }
+                }
+            }
+        }
+    }
+
+    return retObj();
+}
+
+function amgdEncode(collection) {
+    var nodesArr = collection.nodes;
+    var edgesArr = collection.edges;
+
+    var nodesCount = nodesArr.length;
+    var edgesCount = edgesArr.length;
+
+    var matrix = [];
+    for (var i = 0; i < nodesCount; i++) {
+        matrix.push(Array(nodesCount).fill(0));
+    }
+    var _loop2 = function _loop2(_i4) {
+        var sourceIdx = nodesArr.findIndex(function (node) {
+            return node.data.id === edgesArr[_i4].data.source;
+        });
+        var targetIdx = nodesArr.findIndex(function (node) {
+            return node.data.id === edgesArr[_i4].data.target;
+        });
+        var directed = edgesArr[_i4].data.oriented;
+
+        matrix[sourceIdx][targetIdx]++;
+        if (!directed) matrix[targetIdx][sourceIdx]++;
+    };
+
+    for (var _i4 = 0; _i4 < edgesCount; _i4++) {
+        _loop2(_i4);
+    }
+
+    return {
+        error: false,
+        content: (0, _stringify2.default)(matrix)
+    };
 }
 
 /***/ }),
@@ -2135,6 +2480,17 @@ module.exports = { "default": __webpack_require__(/*! core-js/library/fn/get-ite
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/core-js/json/stringify.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/babel-runtime/core-js/json/stringify.js ***!
+  \**************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = { "default": __webpack_require__(/*! core-js/library/fn/json/stringify */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/json/stringify.js"), __esModule: true };
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/core-js/number/is-integer.js":
 /*!*****************************************************************!*\
   !*** ./node_modules/babel-runtime/core-js/number/is-integer.js ***!
@@ -2275,6 +2631,22 @@ exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.d
 __webpack_require__(/*! ../modules/web.dom.iterable */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/web.dom.iterable.js");
 __webpack_require__(/*! ../modules/es6.string.iterator */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.string.iterator.js");
 module.exports = __webpack_require__(/*! ../modules/core.get-iterator */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/core.get-iterator.js");
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/json/stringify.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/json/stringify.js ***!
+  \**************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var core = __webpack_require__(/*! ../../modules/_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js");
+var $JSON = core.JSON || (core.JSON = { stringify: JSON.stringify });
+module.exports = function stringify(it) { // eslint-disable-line no-unused-vars
+  return $JSON.stringify.apply($JSON, arguments);
+};
 
 
 /***/ }),

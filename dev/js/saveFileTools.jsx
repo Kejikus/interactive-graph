@@ -2,11 +2,16 @@ import XRegExp from 'xregexp';
 
 const r = String.raw;
 
+// Every read function:
+// - accepts only raw, cleaned from comments, string with file contents
+// - returns {edges: {}, nodes: {}, errors: [], lastId: int} object
+// Every write function
+// - accepts a collection {nodes: [], edges: []} object
+// - returns {error: bool, content: str} object
+
 export function evfDecode(data) {
     // Decode Edges/Vertices format
-    // Returns object {nodes: {...nodeObj}, edges: {...edgeObj}, errors: [...str], lastId: int}
     // Nodes and edges are ready to be added in the graph and are not colliding
-    // lastId - greatest id from all objects
     // Edge weight can't be < 0
 
     const edgesGroup = XRegExp(r`Edges\s*{\s*(?<content>[^}]*)\s*}`, 's');
@@ -32,8 +37,8 @@ export function evfDecode(data) {
         XRegExp.forEach(verticesText, vertexEntry, (match, i) => {
             console.log(match);
             lastIdx = i;
-            let x = parseInt(match.vertexX);
-            let y = parseInt(match.vertexY);
+            let x = parseFloat(match.vertexX);
+            let y = parseFloat(match.vertexY);
             let id = match.vertexId;
             if (!usedIds.includes(id)) {
                 nodes[id] = {
@@ -114,7 +119,7 @@ export function evfDecode(data) {
                     group: 'edges',
                     data: {
                         id: edgeId,
-                        weight: parseInt(match.edgeWeight),
+                        weight: parseFloat(match.edgeWeight),
                         oriented: oriented,
                         source: source,
                         target: target
@@ -150,8 +155,6 @@ export function evfDecode(data) {
 
 export function evfEncode(collection) {
     // Encode given node and edge objects in the .evf format
-    // collection - {nodes: [...nodeObj], edges: [..edgeObj]}
-    // Return object {error: bool, content: str}
     // content - string containing .evf file contents
     // error - flag if there were an error, if it's set, content will be empty
 
@@ -191,13 +194,13 @@ export function imgdDecode(data) {
     // imgd - Incidence Matrix Graph Data
     // Treated as JSON with condition that all JSON is a rectangle array
     // Row - node, column - edge
-    // Return {node: {}, edges: {}, errors: [], lastId: int}
 
     let errors = [];
     let nodes = {};
     let edges = {};
     let lastId = -1;
 
+    // There are many points with return statements, so this would lessen the code
     const retObj = () => {
         return {
             errors: errors,
@@ -224,7 +227,6 @@ export function imgdDecode(data) {
                 if (k !== '' && typeof v[0] !== 'number') {
                     formatError = true;
                     errors.push(`Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]`);
-                    console.log(2)
                 }
                 if (k !== '' && rowLength !== -1 && v.length !== rowLength) {
                     formatError = true;
@@ -235,11 +237,11 @@ export function imgdDecode(data) {
             }
             formatError = true;
             errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
-            console.log(3);
             return v;
         });
         if (formatError) return retObj();
     } catch (e) {
+        errors.push('Error parsing file - not valid format - check braces and commas');
         return retObj();
     }
 
@@ -262,7 +264,6 @@ export function imgdDecode(data) {
         let source = null;
         let target = null;
         let directed = false;
-        let id = ++lastId;
         for (let j = 0; j < nodesCount; j++) {
             if (matrix[j][i] === 1) {
                 if (source === null) {
@@ -270,7 +271,7 @@ export function imgdDecode(data) {
                 } else if (target === null) {
                     target = j;
                 } else {
-                    errors.push(``);
+                    errors.push(`Hypergraphs are not (yet) supported`);
                     return retObj();
                 }
             } else if (matrix[j][i] === -1) {
@@ -282,10 +283,17 @@ export function imgdDecode(data) {
                     source = j;
                     directed = true;
                 } else {
+                    errors.push(`Hypergraphs are not (yet) supported`);
                     return retObj();
                 }
             }
         }
+        if (source === null) {
+            errors.push('There are an edge that is not connected to any node (column with zeros)');
+            continue;
+        }
+        if (target === null) target = source;
+        const id = ++lastId;
         edges[id] = {
             group: 'edges',
             data: {
@@ -299,4 +307,215 @@ export function imgdDecode(data) {
     }
 
     return retObj();
+}
+
+export function imgdEncode(collection) {
+    let nodesArr = collection.nodes;
+    let edgesArr = collection.edges;
+
+    const nodesCount = nodesArr.length;
+    const edgesCount = edgesArr.length;
+
+    let matrix = [];
+    for (let i = 0; i < nodesCount; i++) matrix.push([]);
+    for (let i = 0; i < edgesCount; i++) {
+        let source = edgesArr[i].data.source;
+        let target = edgesArr[i].data.target;
+        let directed = edgesArr[i].data.oriented;
+        let sourceIdx = nodesArr.findIndex(item => item.data.id === source);
+        let targetIdx = nodesArr.findIndex(item => item.data.id === target);
+
+        for (let j = 0; j < nodesCount; j++) {
+            if (j !== sourceIdx && j !== targetIdx) {
+                matrix[j].push(0);
+            } else if (directed && (j === sourceIdx || j === sourceIdx && sourceIdx === targetIdx)) {
+                matrix[j].push(-1);
+            } else {
+                matrix[j].push(1);
+            }
+        }
+    }
+
+    return {
+        error: false,
+        content: JSON.stringify(matrix)
+    }
+}
+
+export function amgdDecode(data) {
+    // amgd - Adjacency Matrix Graph Data
+    // Treated as JSON with condition that all JSON is a square array
+
+    let errors = [];
+    let nodes = {};
+    let edges = {};
+    let lastId = -1;
+
+    // There are many points with return statements, so this would lessen the code
+    const retObj = () => {
+        return {
+            errors: errors,
+            nodes: nodes,
+            edges: edges,
+            lastId: lastId
+        };
+    };
+
+    let matrix;
+    try {
+        let formatError = false;
+        let rowLength = -1;
+        matrix = JSON.parse(data, (k, v) => {
+            if (formatError) return v;
+            if (typeof v === 'number') {
+                if (!(Number.isInteger(v))) {
+                    formatError = true;
+                    errors.push(`Error parsing file - '${v}' is not integer`);
+                }
+                return v;
+            }
+            if (typeof v === 'object' && Array.isArray(v)) {
+                if (k !== '' && typeof v[0] !== 'number') {
+                    formatError = true;
+                    errors.push(`Error parsing file - file must be a square array of numbers`);
+                }
+                if (rowLength !== -1 && v.length !== rowLength) {
+                    formatError = true;
+                    errors.push(`Error parsing file - file must be a square array of numbers`);
+                }
+                rowLength = v.length;
+                return v;
+            }
+            formatError = true;
+            errors.push('Error parsing file - file must be a square array of numbers');
+            return v;
+        });
+        if (formatError) return retObj();
+    } catch (e) {
+        errors.push('Error parsing file - not valid format - check braces and commas');
+        return retObj();
+    }
+
+    const nodesCount = matrix.length;
+    for (let i = 0; i < nodesCount; i++) {
+        nodes[i] = {
+            group: 'nodes',
+            data: {
+                id: ++lastId,
+                layout: true
+            },
+            position: {
+                x: 0,
+                y: 0
+            }
+        };
+    }
+    for (let i = 0; i < nodesCount; i++) {
+        for (let j = i; j < nodesCount; j++) {
+            let edgeCountSource = matrix[i][j];
+            let edgeCountTarget = matrix[j][i];
+            if (edgeCountSource !== 0 || edgeCountTarget !== 0) {
+                if (i === j) { // Loop edges
+                    while (edgeCountSource >= 2) {
+                        let edgeId = ++lastId;
+                        edges[edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                weight: 1,
+                                source: i,
+                                target: j,
+                                oriented: false
+                            }
+                        };
+                        edgeCountSource -= 2;
+                    }
+                    if (edgeCountSource === 1) {
+                        let edgeId = ++lastId;
+                        edges[edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                weight: 1,
+                                source: i,
+                                target: j,
+                                oriented: true
+                            }
+                        };
+                        edgeCountSource--;
+                    }
+                } else {
+                    while (edgeCountSource > 0 && edgeCountTarget > 0) {
+                        let edgeId = ++lastId;
+                        edges[edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                weight: 1,
+                                source: i,
+                                target: j,
+                                oriented: false
+                            }
+                        };
+                        edgeCountSource--;
+                        edgeCountTarget--;
+                    }
+                    while (edgeCountSource > 0) {
+                        let edgeId = ++lastId;
+                        edges[edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                weight: 1,
+                                source: i,
+                                target: j,
+                                oriented: true
+                            }
+                        };
+                        edgeCountSource--;
+                    }
+                    while (edgeCountTarget > 0) {
+                        let edgeId = ++lastId;
+                        edges[edgeId] = {
+                            group: 'edges',
+                            data: {
+                                id: edgeId,
+                                weight: 1,
+                                source: j,
+                                target: i,
+                                oriented: true
+                            }
+                        };
+                        edgeCountTarget--;
+                    }
+                }
+            }
+        }
+    }
+
+    return retObj();
+}
+
+export function amgdEncode(collection) {
+    let nodesArr = collection.nodes;
+    let edgesArr = collection.edges;
+
+    const nodesCount = nodesArr.length;
+    const edgesCount = edgesArr.length;
+
+    let matrix = [];
+    for (let i = 0; i < nodesCount; i++) matrix.push(Array(nodesCount).fill(0));
+    for (let i = 0; i < edgesCount; i++) {
+        let sourceIdx = nodesArr.findIndex(node => node.data.id === edgesArr[i].data.source);
+        let targetIdx = nodesArr.findIndex(node => node.data.id === edgesArr[i].data.target);
+        let directed = edgesArr[i].data.oriented;
+
+        matrix[sourceIdx][targetIdx]++;
+        if (!directed) matrix[targetIdx][sourceIdx]++;
+    }
+
+    return {
+        error: false,
+        content: JSON.stringify(matrix)
+    }
 }

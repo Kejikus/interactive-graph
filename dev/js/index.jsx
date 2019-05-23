@@ -2,7 +2,7 @@ import {app, BrowserWindow, Menu, dialog, ipcMain} from "electron";
 import fs from 'fs';
 import path from 'path';
 
-import {evfDecode, evfEncode, imgdDecode} from './saveFileTools';
+import {amgdDecode, amgdEncode, evfDecode, evfEncode, imgdDecode, imgdEncode} from './saveFileTools';
 import helpTxt from '../text/help.txt';
 import authorsTxt from '../text/authors.txt';
 
@@ -20,10 +20,10 @@ function openFile() {
         title: "Select graph file",
         properties: ["openFile"],
         filters: [
+            {name: "All formats", extensions: ["evf", "imgd", "amgd"]},
             {name: "Edges/Vertices format", extensions: ["evf"]},
             {name: "Incidence matrix", extensions: ["imgd"]},
-            {name: "Adjacency matrix", extensions: ["amgd"]},
-            {name: "All files", extensions: ["*"]}
+            {name: "Adjacency matrix", extensions: ["amgd"]}
         ]
     }, filePaths => {
         console.log(filePaths);
@@ -33,20 +33,18 @@ function openFile() {
         }
 
         let filename = filePaths[0];
-        if (path.extname(filename) === '.evf') {
-            fs.readFile(filename, 'utf8', (err, data) => {
-                let graphData = evfDecode(data);
-                console.log(graphData);
-                ipcSend("set-graph", graphData);
-            });
-        } else if (path.extname(filename) === '.imgd') {
-            fs.readFile(filename, 'utf8', (err, data) => {
-                let graphData = imgdDecode(data);
-                console.log(graphData);
-                ipcSend("set-graph", graphData);
-            });
-        } else if (path.extname(filename) === '.amgd') {
+        let decodeFunc = null;
 
+        if (path.extname(filename) === '.evf') decodeFunc = evfDecode;
+        else if (path.extname(filename) === '.imgd') decodeFunc = imgdDecode;
+        else if (path.extname(filename) === '.amgd') decodeFunc = amgdDecode;
+
+        if (decodeFunc !== null) {
+            fs.readFile(filename, 'utf8', (err, data) => {
+                let graphData = decodeFunc(data);
+                console.log(graphData);
+                ipcSend("set-graph", graphData);
+            });
         }
     });
 }
@@ -61,7 +59,16 @@ function saveAsIncidenceMatrix() {
     }, filename => {
         if (filename === undefined) return;
 
-        console.log(filename);
+        ipcSend("request-save-collection", null);
+        ipcMain.once("send-save-collection", (sender, obj) => {
+            const fileObj = imgdEncode(obj);
+            if (!fileObj.error)
+                fs.writeFile(filename, fileObj.content, err => {
+                    if (err) return ipcSend("save-error", err);
+                    ipcSend("save-success", null);
+                });
+            else ipcSend("save-error", 'Error saving in .imgd format');
+        });
     });
 }
 
@@ -75,7 +82,16 @@ function saveAsAdjacencyMatrix() {
     }, filename => {
         if (filename === undefined) return;
 
-        console.log(filename);
+        ipcSend("request-save-collection", null);
+        ipcMain.once("send-save-collection", (sender, obj) => {
+            const fileObj = amgdEncode(obj);
+            if (!fileObj.error)
+                fs.writeFile(filename, fileObj.content, err => {
+                    if (err) return ipcSend("save-error", err);
+                    ipcSend("save-success", null);
+                });
+            else ipcSend("save-error", 'Error saving in .imgd format');
+        });
     });
 }
 
@@ -97,6 +113,7 @@ function saveAsEdgesVertices() {
                     if (err) return ipcSend("save-error", err);
                     ipcSend("save-success", null);
                 });
+            else ipcSend("save-error", 'Error saving in .evf format');
         });
     });
 }

@@ -146,7 +146,13 @@ function openFile() {
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
             });
-        }
+        } else if (_path2.default.extname(filename) === '.imgd') {
+            _fs2.default.readFile(filename, 'utf8', function (err, data) {
+                var graphData = (0, _saveFileTools.imgdDecode)(data);
+                console.log(graphData);
+                ipcSend("set-graph", graphData);
+            });
+        } else if (_path2.default.extname(filename) === '.amgd') {}
     });
 }
 
@@ -322,9 +328,9 @@ var _raw = __webpack_require__(/*! babel-runtime/core-js/string/raw */ "./node_m
 var _raw2 = _interopRequireDefault(_raw);
 
 var _templateObject = (0, _taggedTemplateLiteral3.default)(['Edgess*{s*(?<content>[^}]*)s*}'], ['Edges\\s*{\\s*(?<content>[^}]*)\\s*}']),
-    _templateObject2 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<edgeId>d+)((?<edgeWeight>-?d+),(?<edgeSourceId>d+),(?<edgeTargetId>d+),(?<edgeDirected>1|0|-1)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<edgeId>\\d+)\\((?<edgeWeight>-?\\d+),(?<edgeSourceId>\\d+),(?<edgeTargetId>\\d+),(?<edgeDirected>1|0|-1)\\))']),
+    _templateObject2 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<edgeId>d+)((?<edgeWeight>d+(?:.d+)?),(?<edgeSourceId>d+),(?<edgeTargetId>d+),(?<edgeDirected>1|0)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<edgeId>\\d+)\\((?<edgeWeight>\\d+(?:\\.\\d+)?),(?<edgeSourceId>\\d+),(?<edgeTargetId>\\d+),(?<edgeDirected>1|0)\\))']),
     _templateObject3 = (0, _taggedTemplateLiteral3.default)(['Verticess*{s*(?<content>[^}]*)s*}'], ['Vertices\\s*{\\s*(?<content>[^}]*)\\s*}']),
-    _templateObject4 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<vertexId>d+)((?<vertexX>-?d+),(?<vertexY>-?d+)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<vertexId>\\d+)\\((?<vertexX>-?\\d+),(?<vertexY>-?\\d+)\\))']);
+    _templateObject4 = (0, _taggedTemplateLiteral3.default)(['(?:(?<=)),|(?<!)))(?<entry>(?<vertexId>d+)((?<vertexX>-?d+(?:.d+)?),(?<vertexY>-?d+(?:.d+)?)))'], ['(?:(?<=\\)),|(?<!\\)))(?<entry>(?<vertexId>\\d+)\\((?<vertexX>-?\\d+(?:\\.\\d+)?),(?<vertexY>-?\\d+(?:\\.\\d+)?)\\))']);
 
 exports.evfDecode = evfDecode;
 exports.evfEncode = evfEncode;
@@ -340,9 +346,10 @@ var r = _raw2.default;
 
 function evfDecode(data) {
     // Decode Edges/Vertices format
-    // Returns object {nodes: [...nodeObj], edges: [...edgeObj], errors: [...str], lastId: int}
+    // Returns object {nodes: {...nodeObj}, edges: {...edgeObj}, errors: [...str], lastId: int}
     // Nodes and edges are ready to be added in the graph and are not colliding
     // lastId - greatest id from all objects
+    // Edge weight can't be < 0
 
     var edgesGroup = (0, _xregexp2.default)(r(_templateObject), 's');
     var edgeEntry = (0, _xregexp2.default)(r(_templateObject2), 'gy');
@@ -403,7 +410,7 @@ function evfDecode(data) {
             _lastIdx = i;
             var source = null;
             var target = null;
-            var oriented = 0;
+            var oriented = false;
             var edgeId = match.edgeId;
 
             var edgeIdUsed = usedIds.includes(edgeId);
@@ -411,19 +418,9 @@ function evfDecode(data) {
             var tgtIdUsed = usedIds.includes(target) && nodes[target] === undefined;
 
             if (!edgeIdUsed && !srcIdUsed && !tgtIdUsed) {
-                if (match.edgeDirected === 1) {
-                    source = match.edgeSourceId;
-                    target = match.edgeTargetId;
-                    oriented = true;
-                } else if (match.edgeDirected === -1) {
-                    source = match.edgeTargetId;
-                    target = match.edgeSourceId;
-                    oriented = true;
-                } else {
-                    source = match.edgeSourceId;
-                    target = match.edgeTargetId;
-                    oriented = false;
-                }
+                source = match.edgeSourceId;
+                target = match.edgeTargetId;
+                oriented = match.edgeDirected === '1';
                 if (nodes[source] === undefined) {
                     nodes[source] = {
                         group: 'nodes',
@@ -576,25 +573,114 @@ function imgdDecode(data) {
     // imgd - Incidence Matrix Graph Data
     // Treated as JSON with condition that all JSON is a rectangle array
     // Row - node, column - edge
-    // Return {error: bool, content: str}
+    // Return {node: {}, edges: {}, errors: [], lastId: int}
 
-    var error = { error: true, content: "" };
+    var errors = [];
+    var nodes = {};
+    var edges = {};
+    var lastId = -1;
+
+    var retObj = function retObj() {
+        return {
+            errors: errors,
+            nodes: nodes,
+            edges: edges,
+            lastId: lastId
+        };
+    };
 
     var matrix = void 0;
     try {
         var formatError = false;
+        var rowLength = -1;
         matrix = JSON.parse(data, function (k, v) {
-            if (typeof v === 'number' && (0, _isInteger2.default)(v)) return v;
-            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
-                if (k !== '' && Array.isArray(v[0])) {
+            if (formatError) return v;
+            if (typeof v === 'number') {
+                if (!((0, _isInteger2.default)(v) && v >= -1 && v <= 1)) {
                     formatError = true;
+                    errors.push('Error parsing file - \'' + v + '\' is not integer or not in [-1, 0, 1]');
+                }
+                return v;
+            }
+            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
+                if (k !== '' && typeof v[0] !== 'number') {
+                    formatError = true;
+                    errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+                    console.log(2);
+                }
+                if (k !== '' && rowLength !== -1 && v.length !== rowLength) {
+                    formatError = true;
+                    errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+                }
+                if (k !== '') rowLength = v.length;
+                return v;
+            }
+            formatError = true;
+            errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+            console.log(3);
+            return v;
+        });
+        if (formatError) return retObj();
+    } catch (e) {
+        return retObj();
+    }
+
+    var nodesCount = matrix.length;
+    var edgesCount = matrix[0].length;
+    for (var i = 0; i < nodesCount; i++) {
+        nodes[i] = {
+            group: 'nodes',
+            data: {
+                id: ++lastId,
+                layout: true
+            },
+            position: {
+                x: 0,
+                y: 0
+            }
+        };
+    }
+    for (var _i = 0; _i < edgesCount; _i++) {
+        var source = null;
+        var target = null;
+        var directed = false;
+        var id = ++lastId;
+        for (var j = 0; j < nodesCount; j++) {
+            if (matrix[j][_i] === 1) {
+                if (source === null) {
+                    source = j;
+                } else if (target === null) {
+                    target = j;
+                } else {
+                    errors.push('');
+                    return retObj();
+                }
+            } else if (matrix[j][_i] === -1) {
+                if (source === null) {
+                    source = j;
+                    directed = true;
+                } else if (target === null && !directed) {
+                    target = source;
+                    source = j;
+                    directed = true;
+                } else {
+                    return retObj();
                 }
             }
-        });
-        if (formatError) return error;
-    } catch (e) {
-        return error;
+        }
+        edges[id] = {
+            group: 'edges',
+            data: {
+                id: id,
+                weight: 1,
+                source: source,
+                target: target,
+                oriented: directed
+            }
+        };
     }
+
+    return retObj();
 }
 
 /***/ }),

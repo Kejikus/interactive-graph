@@ -4,14 +4,15 @@ const r = String.raw;
 
 export function evfDecode(data) {
     // Decode Edges/Vertices format
-    // Returns object {nodes: [...nodeObj], edges: [...edgeObj], errors: [...str], lastId: int}
+    // Returns object {nodes: {...nodeObj}, edges: {...edgeObj}, errors: [...str], lastId: int}
     // Nodes and edges are ready to be added in the graph and are not colliding
     // lastId - greatest id from all objects
+    // Edge weight can't be < 0
 
     const edgesGroup = XRegExp(r`Edges\s*{\s*(?<content>[^}]*)\s*}`, 's');
-    const edgeEntry = XRegExp(r`(?:(?<=\)),|(?<!\)))(?<entry>(?<edgeId>\d+)\((?<edgeWeight>-?\d+),(?<edgeSourceId>\d+),(?<edgeTargetId>\d+),(?<edgeDirected>1|0|-1)\))`, 'gy');
+    const edgeEntry = XRegExp(r`(?:(?<=\)),|(?<!\)))(?<entry>(?<edgeId>\d+)\((?<edgeWeight>\d+(?:\.\d+)?),(?<edgeSourceId>\d+),(?<edgeTargetId>\d+),(?<edgeDirected>1|0)\))`, 'gy');
     const verticesGroup = XRegExp(r`Vertices\s*{\s*(?<content>[^}]*)\s*}`, 's');
-    const vertexEntry = XRegExp(r`(?:(?<=\)),|(?<!\)))(?<entry>(?<vertexId>\d+)\((?<vertexX>-?\d+),(?<vertexY>-?\d+)\))`, 'gy');
+    const vertexEntry = XRegExp(r`(?:(?<=\)),|(?<!\)))(?<entry>(?<vertexId>\d+)\((?<vertexX>-?\d+(?:\.\d+)?),(?<vertexY>-?\d+(?:\.\d+)?)\))`, 'gy');
 
     let edgesMatch = XRegExp.exec(data, edgesGroup);
     let verticesMatch = XRegExp.exec(data, verticesGroup);
@@ -67,7 +68,7 @@ export function evfDecode(data) {
             lastIdx = i;
             let source = null;
             let target = null;
-            let oriented = 0;
+            let oriented = false;
             let edgeId = match.edgeId;
 
             let edgeIdUsed = usedIds.includes(edgeId);
@@ -76,19 +77,9 @@ export function evfDecode(data) {
 
             if (!edgeIdUsed && !srcIdUsed && !tgtIdUsed)
             {
-                if (match.edgeDirected === 1) {
-                    source = match.edgeSourceId;
-                    target = match.edgeTargetId;
-                    oriented = true;
-                } else if (match.edgeDirected === -1) {
-                    source = match.edgeTargetId;
-                    target = match.edgeSourceId;
-                    oriented = true;
-                } else {
-                    source = match.edgeSourceId;
-                    target = match.edgeTargetId;
-                    oriented = false;
-                }
+                source = match.edgeSourceId;
+                target = match.edgeTargetId;
+                oriented = match.edgeDirected === '1';
                 if (nodes[source] === undefined) {
                     nodes[source] = {
                         group: 'nodes',
@@ -200,9 +191,21 @@ export function imgdDecode(data) {
     // imgd - Incidence Matrix Graph Data
     // Treated as JSON with condition that all JSON is a rectangle array
     // Row - node, column - edge
-    // Return {error: bool, content: str}
+    // Return {node: {}, edges: {}, errors: [], lastId: int}
 
-    const error = {error: true, content: ""};
+    let errors = [];
+    let nodes = {};
+    let edges = {};
+    let lastId = -1;
+
+    const retObj = () => {
+        return {
+            errors: errors,
+            nodes: nodes,
+            edges: edges,
+            lastId: lastId
+        };
+    };
 
     let matrix;
     try {
@@ -213,21 +216,87 @@ export function imgdDecode(data) {
             if (typeof v === 'number') {
                 if (!(Number.isInteger(v) && (v >= -1 && v <= 1))) {
                     formatError = true;
+                    errors.push(`Error parsing file - '${v}' is not integer or not in [-1, 0, 1]`);
                 }
                 return v;
             }
             if (typeof v === 'object' && Array.isArray(v)) {
-                if (k !== '' && typeof v[0] !== 'number') formatError = true;
-                if (rowLength !== -1 && v.length !== rowLength) formatError = true;
+                if (k !== '' && typeof v[0] !== 'number') {
+                    formatError = true;
+                    errors.push(`Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]`);
+                    console.log(2)
+                }
+                if (k !== '' && rowLength !== -1 && v.length !== rowLength) {
+                    formatError = true;
+                    errors.push(`Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]`);
+                }
                 if (k !== '') rowLength = v.length;
                 return v;
             }
             formatError = true;
+            errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+            console.log(3);
             return v;
         });
-        if (formatError) return error;
+        if (formatError) return retObj();
     } catch (e) {
-        return error;
+        return retObj();
     }
 
+    const nodesCount = matrix.length;
+    const edgesCount = matrix[0].length;
+    for (let i = 0; i < nodesCount; i++) {
+        nodes[i] = {
+            group: 'nodes',
+            data: {
+                id: ++lastId,
+                layout: true
+            },
+            position: {
+                x: 0,
+                y: 0
+            }
+        };
+    }
+    for (let i = 0; i < edgesCount; i++) {
+        let source = null;
+        let target = null;
+        let directed = false;
+        let id = ++lastId;
+        for (let j = 0; j < nodesCount; j++) {
+            if (matrix[j][i] === 1) {
+                if (source === null) {
+                    source = j;
+                } else if (target === null) {
+                    target = j;
+                } else {
+                    errors.push(``);
+                    return retObj();
+                }
+            } else if (matrix[j][i] === -1) {
+                if (source === null) {
+                    source = j;
+                    directed = true;
+                } else if (target === null && !directed) {
+                    target = source;
+                    source = j;
+                    directed = true;
+                } else {
+                    return retObj();
+                }
+            }
+        }
+        edges[id] = {
+            group: 'edges',
+            data: {
+                id: id,
+                weight: 1,
+                source: source,
+                target: target,
+                oriented: directed
+            }
+        }
+    }
+
+    return retObj();
 }

@@ -2,7 +2,7 @@ import {app, BrowserWindow, Menu, dialog, ipcMain} from "electron";
 import fs from 'fs';
 import path from 'path';
 
-import {evfDecode, evfEncode} from './saveFileTools';
+import {evfDecode, evfEncode, imgdDecode} from './saveFileTools';
 import helpTxt from '../text/help.txt';
 import authorsTxt from '../text/authors.txt';
 
@@ -39,6 +39,14 @@ function openFile() {
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
             });
+        } else if (path.extname(filename) === '.imgd') {
+            fs.readFile(filename, 'utf8', (err, data) => {
+                let graphData = imgdDecode(data);
+                console.log(graphData);
+                ipcSend("set-graph", graphData);
+            });
+        } else if (path.extname(filename) === '.amgd') {
+
         }
     });
 }

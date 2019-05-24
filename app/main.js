@@ -98,7 +98,7 @@ var main =
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+	value: true
 });
 
 var _assign = __webpack_require__(/*! babel-runtime/core-js/object/assign */ "./node_modules/babel-runtime/core-js/object/assign.js");
@@ -155,6 +155,8 @@ var _toolbar = __webpack_require__(/*! ./toolbar */ "./dev/js/components/toolbar
 
 var _toolbar2 = _interopRequireDefault(_toolbar);
 
+var _algorithms = __webpack_require__(/*! ../stores/algorithms */ "./dev/js/stores/algorithms.js");
+
 var _cytoscapeTxt = __webpack_require__(/*! ../../styles/cytoscape.txt.css */ "./dev/styles/cytoscape.txt.css");
 
 var _cytoscapeTxt2 = _interopRequireDefault(_cytoscapeTxt);
@@ -165,336 +167,340 @@ _cytoscape2.default.use(_cytoscapeEdgehandles2.default);
 (0, _cytoscapeUndoRedo2.default)(_cytoscape2.default);
 
 var Graph = function (_Component) {
-    (0, _inherits3.default)(Graph, _Component);
+	(0, _inherits3.default)(Graph, _Component);
 
-    function Graph(props) {
-        (0, _classCallCheck3.default)(this, Graph);
+	function Graph(props) {
+		(0, _classCallCheck3.default)(this, Graph);
 
-        var _this = (0, _possibleConstructorReturn3.default)(this, (Graph.__proto__ || (0, _getPrototypeOf2.default)(Graph)).call(this, props));
+		var _this = (0, _possibleConstructorReturn3.default)(this, (Graph.__proto__ || (0, _getPrototypeOf2.default)(Graph)).call(this, props));
 
-        _this.state = {
-            mode: null,
-            graphOnClick: null,
-            lastId: -1,
-            lastNodeIdx: -1,
-            lastEdgeIdx: -1
-        };
-        _this.graphContainer = _react2.default.createRef();
-        _this.toolbar = _react2.default.createRef();
-        _this.incidenceMatrix = props.incidenceMatrix || null;
-        (0, _jquery2.default)(document).on("keydown", function (e) {
-            if (e.ctrlKey) {
-                if (e.which === 'D'.charCodeAt(0)) {
-                    _this.onAddNodeClick();
-                    e.preventDefault();
-                } else if (e.which === 'E'.charCodeAt(0)) {
-                    _this.onAddEdgeClick();
-                    e.preventDefault();
-                } else if (e.shiftKey && e.which === 'Z'.charCodeAt(0)) {
-                    _this.ur.redo();
-                    e.preventDefault();
-                } else if (e.which === 'Z'.charCodeAt(0)) {
-                    _this.ur.undo();
-                    e.preventDefault();
-                }
-            } else {
-                if (e.which === 46) {
-                    // Delete
-                    _this.ur.do('remove', _this.cy.$(':selected'));
-                    e.preventDefault();
-                }
-            }
-        });
-        return _this;
-    }
+		_this.state = {
+			mode: null,
+			graphOnClick: null,
+			lastId: -1,
+			lastNodeIdx: -1,
+			lastEdgeIdx: -1
+		};
+		_this.graphContainer = _react2.default.createRef();
+		_this.toolbar = _react2.default.createRef();
+		_this.incidenceMatrix = props.incidenceMatrix || null;
+		(0, _jquery2.default)(document).on("keydown", function (e) {
+			if (e.ctrlKey) {
+				if (e.which === 'D'.charCodeAt(0)) {
+					_this.onAddNodeClick();
+					e.preventDefault();
+				} else if (e.which === 'E'.charCodeAt(0)) {
+					_this.onAddEdgeClick();
+					e.preventDefault();
+				} else if (e.shiftKey && e.which === 'Z'.charCodeAt(0)) {
+					_this.ur.redo();
+					e.preventDefault();
+				} else if (e.which === 'Z'.charCodeAt(0)) {
+					_this.ur.undo();
+					e.preventDefault();
+				}
+			} else {
+				if (e.which === 46) {
+					// Delete
+					_this.ur.do('remove', _this.cy.$(':selected'));
+					e.preventDefault();
+				}
+			}
+		});
 
-    (0, _createClass3.default)(Graph, [{
-        key: 'componentDidMount',
-        value: function componentDidMount() {
-            var _this2 = this;
+		_this.tasks = _algorithms.InitAlgorithms.create();
+		return _this;
+	}
 
-            this.cy = (0, _cytoscape2.default)({
-                container: this.graphContainer.current,
-                style: _cytoscapeTxt2.default
-            });
-            // Concat two list of styles
-            var concatStyle = this.cy.style().json().concat([{
-                selector: '[label][weight]',
-                style: {
-                    'label': function label(ele) {
-                        if (ele.data().label && ele.data().weight) {
-                            return '[' + ele.data().weight + '] ' + ele.data().label;
-                        } else if (ele.data().label) {
-                            return ele.data().label;
-                        } else if (ele.data().weight) {
-                            return ele.data().weight;
-                        } else {
-                            return '';
-                        }
-                    }
-                }
-            }]);
-            this.cy.style().fromJson(concatStyle);
-            this.cy.on('select', 'node', function (event) {
-                var node = event.target;
-                node.cy().$('edge[source="' + node.id() + '"], edge[target="' + node.id() + '"][!oriented]').addClass('node-selected');
-            });
-            this.cy.on('unselect', 'node', function (event) {
-                var node = event.target;
-                node.cy().$('edge[source="' + node.id() + '"], edge[target="' + node.id() + '"][!oriented]').removeClass('node-selected');
-            });
+	(0, _createClass3.default)(Graph, [{
+		key: 'componentDidMount',
+		value: function componentDidMount() {
+			var _this2 = this;
 
-            // const recalculateNodeWeight = node => {
-            //     let weightObj = node.connectedEdges().difference('.eh-ghost-edge').difference(`[?oriented][source != "${node.id}"]`).min(edge => {
-            //             const srcX = edge.source().position().x;
-            //             const srcY = edge.source().position().y;
-            //             const tgtX = edge.target().position().x;
-            //             const tgtY = edge.target().position().y;
-            //             return Math.floor(Math.sqrt(
-            //                 Math.pow(Math.abs(srcX - tgtX), 2) +
-            //                 Math.pow(Math.abs(srcY - tgtY), 2)
-            //             ))
-            //     });
-            //     if (weightObj.ele) {
-            //         node.data('weight', weightObj.value);
-            //     } else {
-            //         node.data('weight', 0);
-            //     }
-            // };
-            //
-            // this.cy.on('add position remove', 'node', event => {
-            //     const node = event.target;
-            //     recalculateNodeWeight(node);
-            //     // console.log(node.neighbourhood());
-            //     node.neighbourhood().filter('node').map(node => recalculateNodeWeight(node));
-            // });
-            // this.cy.on('add remove', 'edge', event => {
-            //     const edge = event.target;
-            //     recalculateNodeWeight(edge.source());
-            //     recalculateNodeWeight(edge.target());
-            // });
-            this.ur = this.cy.undoRedo({
-                undoableDrag: true,
-                stackSizeLimit: 10
-            });
+			this.cy = (0, _cytoscape2.default)({
+				container: this.graphContainer.current,
+				style: _cytoscapeTxt2.default
+			});
+			// Concat two list of styles
+			var concatStyle = this.cy.style().json().concat([{
+				selector: '[label][weight]',
+				style: {
+					'label': function label(ele) {
+						if (ele.data().label && ele.data().weight) {
+							return '[' + ele.data().weight + '] ' + ele.data().label;
+						} else if (ele.data().label) {
+							return ele.data().label;
+						} else if (ele.data().weight) {
+							return ele.data().weight;
+						} else {
+							return '';
+						}
+					}
+				}
+			}]);
+			this.cy.style().fromJson(concatStyle);
+			this.cy.on('select', 'node', function (event) {
+				var node = event.target;
+				node.cy().$('edge[source="' + node.id() + '"], edge[target="' + node.id() + '"][!oriented]').addClass('node-selected');
+			});
+			this.cy.on('unselect', 'node', function (event) {
+				var node = event.target;
+				node.cy().$('edge[source="' + node.id() + '"], edge[target="' + node.id() + '"][!oriented]').removeClass('node-selected');
+			});
 
-            _electron.ipcRenderer.on("clear-graph", function () {
-                return _this2.clear();
-            });
-            _electron.ipcRenderer.on("set-graph", function (sender, obj) {
-                // console.log(obj);
-                if (obj.errors.length > 0) {
-                    _this2.toolbar.current.showMessage('File corrupted, check console');
-                    console.log(obj.errors);
-                    return;
-                }
-                _this2.clear();
-                _this2.ur.reset();
-                _this2.cy.json({
-                    elements: {
-                        nodes: (0, _values2.default)(obj.nodes),
-                        edges: (0, _values2.default)(obj.edges)
-                    }
-                });
-                _this2.state.lastId = obj.lastId;
+			// const recalculateNodeWeight = node => {
+			//     let weightObj = node.connectedEdges().difference('.eh-ghost-edge').difference(`[?oriented][source != "${node.id}"]`).min(edge => {
+			//             const srcX = edge.source().position().x;
+			//             const srcY = edge.source().position().y;
+			//             const tgtX = edge.target().position().x;
+			//             const tgtY = edge.target().position().y;
+			//             return Math.floor(Math.sqrt(
+			//                 Math.pow(Math.abs(srcX - tgtX), 2) +
+			//                 Math.pow(Math.abs(srcY - tgtY), 2)
+			//             ))
+			//     });
+			//     if (weightObj.ele) {
+			//         node.data('weight', weightObj.value);
+			//     } else {
+			//         node.data('weight', 0);
+			//     }
+			// };
+			//
+			// this.cy.on('add position remove', 'node', event => {
+			//     const node = event.target;
+			//     recalculateNodeWeight(node);
+			//     // console.log(node.neighbourhood());
+			//     node.neighbourhood().filter('node').map(node => recalculateNodeWeight(node));
+			// });
+			// this.cy.on('add remove', 'edge', event => {
+			//     const edge = event.target;
+			//     recalculateNodeWeight(edge.source());
+			//     recalculateNodeWeight(edge.target());
+			// });
 
-                var layout = _this2.cy.filter('node[?layout]').layout({
-                    name: 'circle'
-                });
-                layout.run();
-            });
-            _electron.ipcRenderer.on("request-save-collection", function () {
-                _electron.ipcRenderer.send("send-save-collection", {
-                    nodes: _this2.cy.nodes().jsons(),
-                    edges: _this2.cy.edges().jsons()
-                });
-            });
-            _electron.ipcRenderer.on("save-error", function (sender, err) {
-                _this2.toolbar.current.showMessage("Error saving file: " + err);
-            });
-            _electron.ipcRenderer.on("save-success", function () {
-                _this2.toolbar.current.showMessage("File saved");
-            });
+			this.ur = this.cy.undoRedo({
+				undoableDrag: true,
+				stackSizeLimit: 10
+			});
 
-            _electron.ipcRenderer.on("execute-algorithm", function (sender, index) {
-                _this2.executeAlgorithm(index);
-            });
+			_electron.ipcRenderer.on("clear-graph", function () {
+				return _this2.clear();
+			});
+			_electron.ipcRenderer.on("set-graph", function (sender, obj) {
+				// console.log(obj);
+				if (obj.errors.length > 0) {
+					_this2.toolbar.current.showMessage('File corrupted, check console');
+					console.log(obj.errors);
+					return;
+				}
+				_this2.clear();
+				_this2.ur.reset();
+				_this2.cy.json({
+					elements: {
+						nodes: (0, _values2.default)(obj.nodes),
+						edges: (0, _values2.default)(obj.edges)
+					}
+				});
+				_this2.state.lastId = obj.lastId;
 
-            console.log(this);
-        }
+				var layout = _this2.cy.filter('node[?layout]').layout({
+					name: 'circle'
+				});
+				layout.run();
+			});
+			_electron.ipcRenderer.on("request-save-collection", function () {
+				_electron.ipcRenderer.send("send-save-collection", {
+					nodes: _this2.cy.nodes().jsons(),
+					edges: _this2.cy.edges().jsons()
+				});
+			});
+			_electron.ipcRenderer.on("save-error", function (sender, err) {
+				_this2.toolbar.current.showMessage("Error saving file: " + err);
+			});
+			_electron.ipcRenderer.on("save-success", function () {
+				_this2.toolbar.current.showMessage("File saved");
+			});
 
-        // Execute graph algorithm by index
+			_electron.ipcRenderer.on("execute-algorithm", function (sender, index) {
+				_this2.executeAlgorithm(index);
+			});
 
-    }, {
-        key: 'executeAlgorithm',
-        value: function executeAlgorithm(index) {
-            // Данные из графа брать:
-            // this.cy.nodes() - объекты нодов
-            // this.cy.edges() - объекты ребер
-        }
-    }, {
-        key: 'resetMode',
-        value: function resetMode() {
-            var mode = this.state.mode;
+			console.log(this);
+		}
 
-            switch (mode) {
-                case 'add-node':
-                    {
-                        this.toolbar.current.showMessage('');
-                        this.cy.removeListener('tap', this.state.graphOnClick);
-                        this.toolbar.current.removeAllFields();
-                        this.cy.resize();
-                        this.state.mode = null;
-                        this.state.graphOnClick = null;
-                        break;
-                    }
-                case 'add-edge':
-                    {
-                        if (this.eh !== null) {
-                            this.eh.disableDrawMode();
-                            this.eh.disable();
-                        }
-                        this.toolbar.current.showMessage('');
-                        this.toolbar.current.removeAllFields();
-                        this.cy.resize();
-                        this.state.mode = null;
-                        break;
-                    }
-            }
-        }
-    }, {
-        key: 'onAddNodeClick',
-        value: function onAddNodeClick() {
-            var _this3 = this;
+		// Execute graph algorithm by index
 
-            var state = this.state;
-            var cy = this.cy;
-            var ur = this.ur;
-            var resetMode = function resetMode() {
-                return _this3.resetMode();
-            };
+	}, {
+		key: 'executeAlgorithm',
+		value: function executeAlgorithm(index) {
+			// Данные из графа брать:
+			// this.cy.nodes() - объекты нодов
+			// this.cy.edges() - объекты ребер
+			this.tasks.get(index)();
+		}
+	}, {
+		key: 'resetMode',
+		value: function resetMode() {
+			var mode = this.state.mode;
 
-            if (state.mode !== 'add-node') {
-                resetMode();
-                state.mode = 'add-node';
+			switch (mode) {
+				case 'add-node':
+					{
+						this.toolbar.current.showMessage('');
+						this.cy.removeListener('tap', this.state.graphOnClick);
+						this.toolbar.current.removeAllFields();
+						this.cy.resize();
+						this.state.mode = null;
+						this.state.graphOnClick = null;
+						break;
+					}
+				case 'add-edge':
+					{
+						if (this.eh !== null) {
+							this.eh.disableDrawMode();
+							this.eh.disable();
+						}
+						this.toolbar.current.showMessage('');
+						this.toolbar.current.removeAllFields();
+						this.cy.resize();
+						this.state.mode = null;
+						break;
+					}
+			}
+		}
+	}, {
+		key: 'onAddNodeClick',
+		value: function onAddNodeClick() {
+			var _this3 = this;
 
-                var labelInput = this.toolbar.current.addField('text', 'node-label', '', 'Node label', true);
+			var state = this.state;
+			var cy = this.cy;
+			var ur = this.ur;
+			var resetMode = function resetMode() {
+				return _this3.resetMode();
+			};
 
-                this.state.graphOnClick = function (event) {
-                    if (state.mode === 'add-node' && event.target === cy) {
-                        var label = labelInput.current.value;
-                        var id = ++state.lastId;
+			if (state.mode !== 'add-node') {
+				resetMode();
+				state.mode = 'add-node';
 
-                        ur.do('add', {
-                            group: 'nodes',
-                            data: {
-                                id: id,
-                                label: label,
-                                weight: undefined
-                            },
-                            position: event.position
-                        });
-                        resetMode();
-                    }
-                };
-                this.toolbar.current.showMessage('Click on the free space to add node there');
-                this.cy.on('tap', this.state.graphOnClick);
-            } else {
-                resetMode();
-            }
-        }
-    }, {
-        key: 'onAddEdgeClick',
-        value: function onAddEdgeClick() {
-            var _this4 = this;
+				var labelInput = this.toolbar.current.addField('text', 'node-label', '', 'Node label', true);
 
-            var state = this.state;
-            var cy = this.cy;
-            var resetMode = function resetMode() {
-                return _this4.resetMode();
-            };
+				this.state.graphOnClick = function (event) {
+					if (state.mode === 'add-node' && event.target === cy) {
+						var label = labelInput.current.value;
+						var id = ++state.lastId;
 
-            if (state.mode !== 'add-edge') {
+						ur.do('add', {
+							group: 'nodes',
+							data: {
+								id: id,
+								label: label,
+								weight: undefined
+							},
+							position: event.position
+						});
+						resetMode();
+					}
+				};
+				this.toolbar.current.showMessage('Click on the free space to add node there');
+				this.cy.on('tap', this.state.graphOnClick);
+			} else {
+				resetMode();
+			}
+		}
+	}, {
+		key: 'onAddEdgeClick',
+		value: function onAddEdgeClick() {
+			var _this4 = this;
 
-                var onEdgeAdded = function onEdgeAdded(source, target, eles) {
-                    _this4.ur.do("add", eles);
-                    resetMode();
-                };
-                var edgeObj = function edgeObj() {
-                    return {
-                        data: {
-                            id: ++state.lastId,
-                            weight: _weightInput.current.value || 1,
-                            oriented: _checkboxIsArrow.current.checked
-                        }
-                    };
-                };
-                var ghostEdgeObj = function ghostEdgeObj() {
-                    return {
-                        data: {
-                            weight: _weightInput.current.value || 1,
-                            oriented: _checkboxIsArrow.current.checked
-                        }
-                    };
-                };
+			var state = this.state;
+			var cy = this.cy;
+			var resetMode = function resetMode() {
+				return _this4.resetMode();
+			};
 
-                resetMode();
-                state.mode = 'add-edge';
+			if (state.mode !== 'add-edge') {
 
-                var _weightInput = this.toolbar.current.addField('number', 'edge-weight', '', 'Edge weight', true);
-                var _checkboxIsArrow = this.toolbar.current.addField('checkbox', 'edge-is-arrow', 'Oriented');
+				var onEdgeAdded = function onEdgeAdded(source, target, eles) {
+					_this4.ur.do("add", eles);
+					resetMode();
+				};
+				var edgeObj = function edgeObj() {
+					return {
+						data: {
+							id: ++state.lastId,
+							weight: _weightInput.current.value || 1,
+							oriented: _checkboxIsArrow.current.checked
+						}
+					};
+				};
+				var ghostEdgeObj = function ghostEdgeObj() {
+					return {
+						data: {
+							weight: _weightInput.current.value || 1,
+							oriented: _checkboxIsArrow.current.checked
+						}
+					};
+				};
 
-                // cytoscape-edgehandles options
-                // https://github.com/cytoscape/cytoscape.js-edgehandles#initialisation
-                var ehOptions = {
-                    complete: onEdgeAdded,
-                    loopAllowed: function loopAllowed() {
-                        return true;
-                    },
-                    edgeParams: edgeObj,
-                    ghostEdgeParams: ghostEdgeObj
-                };
+				resetMode();
+				state.mode = 'add-edge';
 
-                if (!this.eh) {
-                    this.eh = cy.edgehandles(ehOptions);
-                } else {
-                    (0, _assign2.default)(this.eh.options, ehOptions); // Update existing options
-                }
-                console.log(this.eh);
-                this.eh.enable();
-                this.eh.enableDrawMode();
-            } else {
-                resetMode();
-            }
-        }
-    }, {
-        key: 'clear',
-        value: function clear() {
-            console.log('Got it');
-            this.cy.remove('*');
-        }
-    }, {
-        key: 'render',
-        value: function render() {
-            var _this5 = this;
+				var _weightInput = this.toolbar.current.addField('number', 'edge-weight', '', 'Edge weight', true);
+				var _checkboxIsArrow = this.toolbar.current.addField('checkbox', 'edge-is-arrow', 'Oriented');
 
-            return _react2.default.createElement(
-                'div',
-                { className: this.props.className },
-                _react2.default.createElement(_toolbar2.default, { className: 'graph-toolbar',
-                    ref: this.toolbar,
-                    buttons: [{ value: "Pan/select", onClick: function onClick() {
-                            return _this5.resetMode();
-                        } }, { value: "Add node", onClick: function onClick() {
-                            return _this5.onAddNodeClick();
-                        } }, { value: "Add edge", onClick: function onClick() {
-                            return _this5.onAddEdgeClick();
-                        } }] }),
-                _react2.default.createElement('div', { className: 'graph-container', ref: this.graphContainer })
-            );
-        }
-    }]);
-    return Graph;
+				// cytoscape-edgehandles options
+				// https://github.com/cytoscape/cytoscape.js-edgehandles#initialisation
+				var ehOptions = {
+					complete: onEdgeAdded,
+					loopAllowed: function loopAllowed() {
+						return true;
+					},
+					edgeParams: edgeObj,
+					ghostEdgeParams: ghostEdgeObj
+				};
+
+				if (!this.eh) {
+					this.eh = cy.edgehandles(ehOptions);
+				} else {
+					(0, _assign2.default)(this.eh.options, ehOptions); // Update existing options
+				}
+				console.log(this.eh);
+				this.eh.enable();
+				this.eh.enableDrawMode();
+			} else {
+				resetMode();
+			}
+		}
+	}, {
+		key: 'clear',
+		value: function clear() {
+			console.log('Got it');
+			this.cy.remove('*');
+		}
+	}, {
+		key: 'render',
+		value: function render() {
+			var _this5 = this;
+
+			return _react2.default.createElement(
+				'div',
+				{ className: this.props.className },
+				_react2.default.createElement(_toolbar2.default, { className: 'graph-toolbar',
+					ref: this.toolbar,
+					buttons: [{ value: "Pan/select", onClick: function onClick() {
+							return _this5.resetMode();
+						} }, { value: "Add node", onClick: function onClick() {
+							return _this5.onAddNodeClick();
+						} }, { value: "Add edge", onClick: function onClick() {
+							return _this5.onAddEdgeClick();
+						} }] }),
+				_react2.default.createElement('div', { className: 'graph-container', ref: this.graphContainer })
+			);
+		}
+	}]);
+	return Graph;
 }(_react.Component);
 
 exports.default = Graph;
@@ -512,7 +518,7 @@ exports.default = Graph;
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+	value: true
 });
 
 var _getPrototypeOf = __webpack_require__(/*! babel-runtime/core-js/object/get-prototype-of */ "./node_modules/babel-runtime/core-js/object/get-prototype-of.js");
@@ -546,169 +552,192 @@ var _materializeCss2 = _interopRequireDefault(_materializeCss);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Toolbar = function (_Component) {
-    (0, _inherits3.default)(Toolbar, _Component);
+	(0, _inherits3.default)(Toolbar, _Component);
 
-    function Toolbar(props) {
-        (0, _classCallCheck3.default)(this, Toolbar);
+	function Toolbar(props) {
+		(0, _classCallCheck3.default)(this, Toolbar);
 
-        var _this = (0, _possibleConstructorReturn3.default)(this, (Toolbar.__proto__ || (0, _getPrototypeOf2.default)(Toolbar)).call(this, props));
+		var _this = (0, _possibleConstructorReturn3.default)(this, (Toolbar.__proto__ || (0, _getPrototypeOf2.default)(Toolbar)).call(this, props));
 
-        _this.state = {
-            buttons: props.buttons,
-            fields: [],
-            message: '',
-            setFocusRef: null
-        };
-        return _this;
-    }
+		_this.state = {
+			buttons: props.buttons,
+			fields: [],
+			message: '',
+			setFocusRef: null
+		};
+		return _this;
+	}
 
-    (0, _createClass3.default)(Toolbar, [{
-        key: 'componentDidUpdate',
-        value: function componentDidUpdate(prevProps, prevState, snapshot) {
-            _materializeCss2.default.updateTextFields();
-            if (this.state.setFocusRef !== null && this.state.setFocusRef.current) {
-                this.state.setFocusRef.current.focus();
-                this.state.setFocusRef = null;
-            }
-        }
-    }, {
-        key: 'addField',
-        value: function addField(type, name) {
-            var label = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-            var placeholder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
-            var focus = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
+	(0, _createClass3.default)(Toolbar, [{
+		key: 'componentDidUpdate',
+		value: function componentDidUpdate(prevProps, prevState, snapshot) {
+			_materializeCss2.default.updateTextFields();
+			if (this.state.setFocusRef !== null && this.state.setFocusRef.current) {
+				this.state.setFocusRef.current.focus();
+				this.state.setFocusRef = null;
+			}
+		}
+	}, {
+		key: 'addField',
+		value: function addField(type, name) {
+			var label = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+			var placeholder = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
+			var focus = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
-            var ref = _react2.default.createRef();
-            this.state.fields.push({
-                type: type,
-                name: name,
-                label: label,
-                placeholder: placeholder,
-                ref: ref
-            });
-            if (focus) {
-                this.state.setFocusRef = ref;
-            }
-            this.forceUpdate();
-            return ref;
-        }
-    }, {
-        key: 'removeField',
-        value: function removeField(i) {
-            this.state.fields = this.state.fields.filter(function (_, index) {
-                return index !== i;
-            });
-            this.forceUpdate();
-        }
-    }, {
-        key: 'removeAllFields',
-        value: function removeAllFields() {
-            this.state.fields = [];
-            this.forceUpdate();
-        }
-    }, {
-        key: 'addButton',
-        value: function addButton(label, onClick, className) {
-            var ref = _react2.default.createRef();
-            this.state.buttons.push({
-                value: label,
-                onClick: onClick,
-                className: className,
-                ref: ref
-            });
-            this.forceUpdate();
-            return ref;
-        }
-    }, {
-        key: 'removeButton',
-        value: function removeButton(i) {
-            this.buttons = this.state.buttons.filter(function (_, index) {
-                return index !== i;
-            });
-            this.forceUpdate();
-        }
-    }, {
-        key: 'removeAllButtons',
-        value: function removeAllButtons() {
-            this.buttons = [];
-            this.forceUpdate();
-        }
-    }, {
-        key: 'showMessage',
-        value: function showMessage(msg) {
-            this.setState({ message: msg });
-        }
-    }, {
-        key: 'render',
-        value: function render() {
+			var ref = _react2.default.createRef();
+			this.state.fields.push({
+				type: type,
+				name: name,
+				label: label,
+				placeholder: placeholder,
+				ref: ref
+			});
+			if (focus) {
+				this.state.setFocusRef = ref;
+			}
+			this.forceUpdate();
+			return ref;
+		}
+	}, {
+		key: 'removeField',
+		value: function removeField(i) {
+			this.state.fields = this.state.fields.filter(function (_, index) {
+				return index !== i;
+			});
+			this.forceUpdate();
+		}
+	}, {
+		key: 'removeAllFields',
+		value: function removeAllFields() {
+			this.state.fields = [];
+			this.forceUpdate();
+		}
+	}, {
+		key: 'addButton',
+		value: function addButton(label, onClick, className) {
+			var ref = _react2.default.createRef();
+			this.state.buttons.push({
+				value: label,
+				onClick: onClick,
+				className: className,
+				ref: ref
+			});
+			this.forceUpdate();
+			return ref;
+		}
+	}, {
+		key: 'removeButton',
+		value: function removeButton(i) {
+			this.buttons = this.state.buttons.filter(function (_, index) {
+				return index !== i;
+			});
+			this.forceUpdate();
+		}
+	}, {
+		key: 'removeAllButtons',
+		value: function removeAllButtons() {
+			this.buttons = [];
+			this.forceUpdate();
+		}
+	}, {
+		key: 'showMessage',
+		value: function showMessage(msg) {
+			this.setState({ message: msg });
+		}
+	}, {
+		key: 'render',
+		value: function render() {
 
-            var buttons = this.state.buttons.map(function (button, index) {
-                return _react2.default.createElement(
-                    'button',
-                    { key: index,
-                        ref: button.ref,
-                        className: 'btn waves-effect waves-light',
-                        onClick: button.onClick },
-                    button.value
-                );
-            });
+			var buttons = this.state.buttons.map(function (button, index) {
+				return _react2.default.createElement(
+					'button',
+					{ key: index,
+						ref: button.ref,
+						className: 'btn waves-effect waves-light',
+						onClick: button.onClick },
+					button.value
+				);
+			});
 
-            var inputFields = this.state.fields.map(function (field, index) {
-                if (['checkbox', 'radio'].includes(field.type)) {
-                    return _react2.default.createElement(
-                        'label',
-                        { key: index },
-                        _react2.default.createElement('input', { ref: field.ref,
-                            type: field.type,
-                            name: field.name }),
-                        _react2.default.createElement(
-                            'span',
-                            null,
-                            field.label
-                        )
-                    );
-                } else {
-                    return _react2.default.createElement(
-                        'div',
-                        { key: index, className: 'input-field' },
-                        _react2.default.createElement('input', { ref: field.ref,
-                            type: field.type,
-                            name: field.name,
-                            placeholder: field.placeholder }),
-                        _react2.default.createElement(
-                            'label',
-                            null,
-                            field.label
-                        )
-                    );
-                }
-            });
+			var inputFields = this.state.fields.map(function (field, index) {
+				if (['checkbox', 'radio'].includes(field.type)) {
+					return _react2.default.createElement(
+						'label',
+						{ key: index },
+						_react2.default.createElement('input', { ref: field.ref,
+							type: field.type,
+							name: field.name }),
+						_react2.default.createElement(
+							'span',
+							null,
+							field.label
+						)
+					);
+				} else {
+					return _react2.default.createElement(
+						'div',
+						{ key: index, className: 'input-field' },
+						_react2.default.createElement('input', { ref: field.ref,
+							type: field.type,
+							name: field.name,
+							placeholder: field.placeholder }),
+						_react2.default.createElement(
+							'label',
+							null,
+							field.label
+						)
+					);
+				}
+			});
 
-            return _react2.default.createElement(
-                'div',
-                { className: this.props.className },
-                _react2.default.createElement(
-                    'div',
-                    { className: 'buttons' },
-                    buttons
-                ),
-                _react2.default.createElement(
-                    'div',
-                    { className: 'fields' },
-                    inputFields
-                ),
-                _react2.default.createElement(
-                    'div',
-                    { className: 'message' },
-                    this.state.message
-                )
-            );
-        }
-    }]);
-    return Toolbar;
+			var message = this.state.message;
+
+
+			return _react2.default.createElement(
+				'div',
+				{ className: this.props.className },
+				_react2.default.createElement(
+					'div',
+					{ className: 'buttons' },
+					buttons
+				),
+				_react2.default.createElement(
+					'div',
+					{ className: 'fields' },
+					inputFields
+				),
+				_react2.default.createElement(
+					'div',
+					{ className: 'message' },
+					message
+				)
+			);
+		}
+	}]);
+	return Toolbar;
 }(_react.Component);
 
 exports.default = Toolbar;
+
+/***/ }),
+
+/***/ "./dev/js/const/enums.js":
+/*!*******************************!*\
+  !*** ./dev/js/const/enums.js ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+var TaskTypeEnum = exports.TaskTypeEnum = {
+	Task1: 'task1',
+	Task2: 'task2'
+};
 
 /***/ }),
 
@@ -765,113 +794,113 @@ function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj;
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 _electron.ipcRenderer.on("log", function (sender, msg) {
-    return console.log(msg);
+	return console.log(msg);
 });
 
 var IncidenceMatrix = function (_Component) {
-    (0, _inherits3.default)(IncidenceMatrix, _Component);
+	(0, _inherits3.default)(IncidenceMatrix, _Component);
 
-    function IncidenceMatrix(props) {
-        (0, _classCallCheck3.default)(this, IncidenceMatrix);
+	function IncidenceMatrix(props) {
+		(0, _classCallCheck3.default)(this, IncidenceMatrix);
 
-        var _this = (0, _possibleConstructorReturn3.default)(this, (IncidenceMatrix.__proto__ || (0, _getPrototypeOf2.default)(IncidenceMatrix)).call(this, props));
+		var _this = (0, _possibleConstructorReturn3.default)(this, (IncidenceMatrix.__proto__ || (0, _getPrototypeOf2.default)(IncidenceMatrix)).call(this, props));
 
-        _this.state = {
-            collection: {
-                nodes: [],
-                edges: []
-            }
-        };
-        return _this;
-    }
+		_this.state = {
+			collection: {
+				nodes: [],
+				edges: []
+			}
+		};
+		return _this;
+	}
 
-    (0, _createClass3.default)(IncidenceMatrix, [{
-        key: 'setData',
-        value: function setData(collection) {
-            this.setState({ collection: collection });
-        }
-    }, {
-        key: 'render',
-        value: function render() {
+	(0, _createClass3.default)(IncidenceMatrix, [{
+		key: 'setData',
+		value: function setData(collection) {
+			this.setState({ collection: collection });
+		}
+	}, {
+		key: 'render',
+		value: function render() {
 
-            var header = this.state.collection.nodes.map(function (node, index) {
-                return _react2.default.createElement(
-                    'th',
-                    { key: node.data.id },
-                    node.data.id
-                );
-            });
+			var header = this.state.collection.nodes.map(function (node, index) {
+				return _react2.default.createElement(
+					'th',
+					{ key: node.data.id },
+					node.data.id
+				);
+			});
 
-            return _react2.default.createElement(
-                'table',
-                { className: 'incidence-matrix' },
-                _react2.default.createElement(
-                    'tbody',
-                    null,
-                    _react2.default.createElement(
-                        'tr',
-                        null,
-                        _react2.default.createElement('th', { className: 'root-cell' })
-                    )
-                )
-            );
-        }
-    }]);
-    return IncidenceMatrix;
+			return _react2.default.createElement(
+				'table',
+				{ className: 'incidence-matrix' },
+				_react2.default.createElement(
+					'tbody',
+					null,
+					_react2.default.createElement(
+						'tr',
+						null,
+						_react2.default.createElement('th', { className: 'root-cell' })
+					)
+				)
+			);
+		}
+	}]);
+	return IncidenceMatrix;
 }(_react.Component);
 
 var App = function (_Component2) {
-    (0, _inherits3.default)(App, _Component2);
+	(0, _inherits3.default)(App, _Component2);
 
-    function App(props) {
-        (0, _classCallCheck3.default)(this, App);
+	function App(props) {
+		(0, _classCallCheck3.default)(this, App);
 
-        var _this2 = (0, _possibleConstructorReturn3.default)(this, (App.__proto__ || (0, _getPrototypeOf2.default)(App)).call(this, props));
+		var _this2 = (0, _possibleConstructorReturn3.default)(this, (App.__proto__ || (0, _getPrototypeOf2.default)(App)).call(this, props));
 
-        _this2.adjacencyMatrix = _react2.default.createRef();
-        return _this2;
-    }
+		_this2.adjacencyMatrix = _react2.default.createRef();
+		return _this2;
+	}
 
-    (0, _createClass3.default)(App, [{
-        key: 'render',
-        value: function render() {
-            return _react2.default.createElement(
-                'div',
-                { className: 'main-wrapper' },
-                _react2.default.createElement(
-                    'header',
-                    { className: 'upper-header card-panel', adjacencyMatrix: this.adjacencyMatrix },
-                    'Interactive graph visualizer'
-                ),
-                _react2.default.createElement(_graph2.default, { className: 'content card-panel' }),
-                _react2.default.createElement(
-                    'div',
-                    { className: 'side-bar card-panel' },
-                    _react2.default.createElement(IncidenceMatrix, { ref: this.adjacencyMatrix }),
-                    _react2.default.createElement(
-                        'ul',
-                        { className: 'hints' },
-                        _react2.default.createElement(
-                            'li',
-                            null,
-                            'Ctrl+Z / Ctrl+Shift+Z - Undo/redo'
-                        ),
-                        _react2.default.createElement(
-                            'li',
-                            null,
-                            'Ctrl+D - Add node'
-                        ),
-                        _react2.default.createElement(
-                            'li',
-                            null,
-                            'Ctrl+E - Add edge'
-                        )
-                    )
-                )
-            );
-        }
-    }]);
-    return App;
+	(0, _createClass3.default)(App, [{
+		key: 'render',
+		value: function render() {
+			return _react2.default.createElement(
+				'div',
+				{ className: 'main-wrapper' },
+				_react2.default.createElement(
+					'header',
+					{ className: 'upper-header card-panel', adjacencyMatrix: this.adjacencyMatrix },
+					'Interactive graph visualizer'
+				),
+				_react2.default.createElement(_graph2.default, { className: 'content card-panel' }),
+				_react2.default.createElement(
+					'div',
+					{ className: 'side-bar card-panel' },
+					_react2.default.createElement(IncidenceMatrix, { ref: this.adjacencyMatrix }),
+					_react2.default.createElement(
+						'ul',
+						{ className: 'hints' },
+						_react2.default.createElement(
+							'li',
+							null,
+							'Ctrl+Z / Ctrl+Shift+Z - Undo/redo'
+						),
+						_react2.default.createElement(
+							'li',
+							null,
+							'Ctrl+D - Add node'
+						),
+						_react2.default.createElement(
+							'li',
+							null,
+							'Ctrl+E - Add edge'
+						)
+					)
+				)
+			);
+		}
+	}]);
+	return App;
 }(_react.Component);
 
 ReactDOM.render(_react2.default.createElement(App, null), document.getElementById('root'));
@@ -879,6 +908,79 @@ ReactDOM.render(_react2.default.createElement(App, null), document.getElementByI
 // $(document).ready(() => {
 //     $('.modal').modal();
 // });
+
+/***/ }),
+
+/***/ "./dev/js/stores/algorithms.js":
+/*!*************************************!*\
+  !*** ./dev/js/stores/algorithms.js ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+exports.InitAlgorithms = undefined;
+
+var _map = __webpack_require__(/*! babel-runtime/core-js/map */ "./node_modules/babel-runtime/core-js/map.js");
+
+var _map2 = _interopRequireDefault(_map);
+
+var _classCallCheck2 = __webpack_require__(/*! babel-runtime/helpers/classCallCheck */ "./node_modules/babel-runtime/helpers/classCallCheck.js");
+
+var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+var _createClass2 = __webpack_require__(/*! babel-runtime/helpers/createClass */ "./node_modules/babel-runtime/helpers/createClass.js");
+
+var _createClass3 = _interopRequireDefault(_createClass2);
+
+var _enums = __webpack_require__(/*! ../const/enums */ "./dev/js/const/enums.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var InitAlgorithms = exports.InitAlgorithms = function () {
+	function InitAlgorithms() {
+		(0, _classCallCheck3.default)(this, InitAlgorithms);
+	}
+
+	(0, _createClass3.default)(InitAlgorithms, null, [{
+		key: 'create',
+		value: function create() {
+			var tasks = new _map2.default();
+			var alg = new AlgorithmsStore();
+
+			tasks.set(_enums.TaskTypeEnum.Task1, alg.task1);
+			tasks.set(_enums.TaskTypeEnum.Task2, alg.task2);
+
+			return tasks;
+		}
+	}]);
+	return InitAlgorithms;
+}();
+
+var AlgorithmsStore = function () {
+	function AlgorithmsStore() {
+		(0, _classCallCheck3.default)(this, AlgorithmsStore);
+	}
+
+	(0, _createClass3.default)(AlgorithmsStore, [{
+		key: 'task1',
+		value: function task1() {
+			console.log('1');
+		}
+	}, {
+		key: 'task2',
+		value: function task2() {
+
+			console.log('4');
+		}
+	}]);
+	return AlgorithmsStore;
+}();
 
 /***/ }),
 
@@ -891,7 +993,7 @@ ReactDOM.render(_react2.default.createElement(App, null), document.getElementByI
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    label: data(id);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    label: data(id);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}");
 
 /***/ }),
 
@@ -922,6 +1024,17 @@ var update = __webpack_require__(/*! ../../node_modules/style-loader/lib/addStyl
 if(content.locals) module.exports = content.locals;
 
 if(false) {}
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/core-js/map.js":
+/*!***************************************************!*\
+  !*** ./node_modules/babel-runtime/core-js/map.js ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = { "default": __webpack_require__(/*! core-js/library/fn/map */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/map.js"), __esModule: true };
 
 /***/ }),
 
@@ -1175,6 +1288,25 @@ exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.d
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/map.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/map.js ***!
+  \***************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(/*! ../modules/es6.object.to-string */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.object.to-string.js");
+__webpack_require__(/*! ../modules/es6.string.iterator */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.string.iterator.js");
+__webpack_require__(/*! ../modules/web.dom.iterable */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/web.dom.iterable.js");
+__webpack_require__(/*! ../modules/es6.map */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.map.js");
+__webpack_require__(/*! ../modules/es7.map.to-json */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.to-json.js");
+__webpack_require__(/*! ../modules/es7.map.of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.of.js");
+__webpack_require__(/*! ../modules/es7.map.from */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.from.js");
+module.exports = __webpack_require__(/*! ../modules/_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js").Map;
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/object/assign.js":
 /*!*************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/object/assign.js ***!
@@ -1316,6 +1448,22 @@ module.exports = function () { /* empty */ };
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function (it, Constructor, name, forbiddenField) {
+  if (!(it instanceof Constructor) || (forbiddenField !== undefined && forbiddenField in it)) {
+    throw TypeError(name + ': incorrect invocation!');
+  } return it;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js":
 /*!***************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js ***!
@@ -1327,6 +1475,24 @@ var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-run
 module.exports = function (it) {
   if (!isObject(it)) throw TypeError(it + ' is not an object!');
   return it;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-from-iterable.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-from-iterable.js ***!
+  \*************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+
+module.exports = function (iter, ITERATOR) {
+  var result = [];
+  forOf(iter, false, result.push, result, ITERATOR);
+  return result;
 };
 
 
@@ -1366,6 +1532,139 @@ module.exports = function (IS_INCLUDES) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-methods.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-methods.js ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// 0 -> Array#forEach
+// 1 -> Array#map
+// 2 -> Array#filter
+// 3 -> Array#some
+// 4 -> Array#every
+// 5 -> Array#find
+// 6 -> Array#findIndex
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var IObject = __webpack_require__(/*! ./_iobject */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iobject.js");
+var toObject = __webpack_require__(/*! ./_to-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-object.js");
+var toLength = __webpack_require__(/*! ./_to-length */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-length.js");
+var asc = __webpack_require__(/*! ./_array-species-create */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-create.js");
+module.exports = function (TYPE, $create) {
+  var IS_MAP = TYPE == 1;
+  var IS_FILTER = TYPE == 2;
+  var IS_SOME = TYPE == 3;
+  var IS_EVERY = TYPE == 4;
+  var IS_FIND_INDEX = TYPE == 6;
+  var NO_HOLES = TYPE == 5 || IS_FIND_INDEX;
+  var create = $create || asc;
+  return function ($this, callbackfn, that) {
+    var O = toObject($this);
+    var self = IObject(O);
+    var f = ctx(callbackfn, that, 3);
+    var length = toLength(self.length);
+    var index = 0;
+    var result = IS_MAP ? create($this, length) : IS_FILTER ? create($this, 0) : undefined;
+    var val, res;
+    for (;length > index; index++) if (NO_HOLES || index in self) {
+      val = self[index];
+      res = f(val, index, O);
+      if (TYPE) {
+        if (IS_MAP) result[index] = res;   // map
+        else if (res) switch (TYPE) {
+          case 3: return true;             // some
+          case 5: return val;              // find
+          case 6: return index;            // findIndex
+          case 2: result.push(val);        // filter
+        } else if (IS_EVERY) return false; // every
+      }
+    }
+    return IS_FIND_INDEX ? -1 : IS_SOME || IS_EVERY ? IS_EVERY : result;
+  };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-constructor.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-constructor.js ***!
+  \*******************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-object.js");
+var isArray = __webpack_require__(/*! ./_is-array */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array.js");
+var SPECIES = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('species');
+
+module.exports = function (original) {
+  var C;
+  if (isArray(original)) {
+    C = original.constructor;
+    // cross-realm fallback
+    if (typeof C == 'function' && (C === Array || isArray(C.prototype))) C = undefined;
+    if (isObject(C)) {
+      C = C[SPECIES];
+      if (C === null) C = undefined;
+    }
+  } return C === undefined ? Array : C;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-create.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-create.js ***!
+  \**************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// 9.4.2.3 ArraySpeciesCreate(originalArray, length)
+var speciesConstructor = __webpack_require__(/*! ./_array-species-constructor */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-constructor.js");
+
+module.exports = function (original, length) {
+  return new (speciesConstructor(original))(length);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_classof.js":
+/*!*************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_classof.js ***!
+  \*************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// getting tag from 19.1.3.6 Object.prototype.toString()
+var cof = __webpack_require__(/*! ./_cof */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_cof.js");
+var TAG = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('toStringTag');
+// ES3 wrong here
+var ARG = cof(function () { return arguments; }()) == 'Arguments';
+
+// fallback for IE11 Script Access Denied error
+var tryGet = function (it, key) {
+  try {
+    return it[key];
+  } catch (e) { /* empty */ }
+};
+
+module.exports = function (it) {
+  var O, T, B;
+  return it === undefined ? 'Undefined' : it === null ? 'Null'
+    // @@toStringTag case
+    : typeof (T = tryGet(O = Object(it), TAG)) == 'string' ? T
+    // builtinTag case
+    : ARG ? cof(O)
+    // ES3 arguments fallback
+    : (B = cof(O)) == 'Object' && typeof O.callee == 'function' ? 'Arguments' : B;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_cof.js":
 /*!*********************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_cof.js ***!
@@ -1377,6 +1676,253 @@ var toString = {}.toString;
 
 module.exports = function (it) {
   return toString.call(it).slice(8, -1);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-strong.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-strong.js ***!
+  \***********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var dP = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js").f;
+var create = __webpack_require__(/*! ./_object-create */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-create.js");
+var redefineAll = __webpack_require__(/*! ./_redefine-all */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js");
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var anInstance = __webpack_require__(/*! ./_an-instance */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js");
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+var $iterDefine = __webpack_require__(/*! ./_iter-define */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-define.js");
+var step = __webpack_require__(/*! ./_iter-step */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-step.js");
+var setSpecies = __webpack_require__(/*! ./_set-species */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-species.js");
+var DESCRIPTORS = __webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js");
+var fastKey = __webpack_require__(/*! ./_meta */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_meta.js").fastKey;
+var validate = __webpack_require__(/*! ./_validate-collection */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js");
+var SIZE = DESCRIPTORS ? '_s' : 'size';
+
+var getEntry = function (that, key) {
+  // fast case
+  var index = fastKey(key);
+  var entry;
+  if (index !== 'F') return that._i[index];
+  // frozen object case
+  for (entry = that._f; entry; entry = entry.n) {
+    if (entry.k == key) return entry;
+  }
+};
+
+module.exports = {
+  getConstructor: function (wrapper, NAME, IS_MAP, ADDER) {
+    var C = wrapper(function (that, iterable) {
+      anInstance(that, C, NAME, '_i');
+      that._t = NAME;         // collection type
+      that._i = create(null); // index
+      that._f = undefined;    // first entry
+      that._l = undefined;    // last entry
+      that[SIZE] = 0;         // size
+      if (iterable != undefined) forOf(iterable, IS_MAP, that[ADDER], that);
+    });
+    redefineAll(C.prototype, {
+      // 23.1.3.1 Map.prototype.clear()
+      // 23.2.3.2 Set.prototype.clear()
+      clear: function clear() {
+        for (var that = validate(this, NAME), data = that._i, entry = that._f; entry; entry = entry.n) {
+          entry.r = true;
+          if (entry.p) entry.p = entry.p.n = undefined;
+          delete data[entry.i];
+        }
+        that._f = that._l = undefined;
+        that[SIZE] = 0;
+      },
+      // 23.1.3.3 Map.prototype.delete(key)
+      // 23.2.3.4 Set.prototype.delete(value)
+      'delete': function (key) {
+        var that = validate(this, NAME);
+        var entry = getEntry(that, key);
+        if (entry) {
+          var next = entry.n;
+          var prev = entry.p;
+          delete that._i[entry.i];
+          entry.r = true;
+          if (prev) prev.n = next;
+          if (next) next.p = prev;
+          if (that._f == entry) that._f = next;
+          if (that._l == entry) that._l = prev;
+          that[SIZE]--;
+        } return !!entry;
+      },
+      // 23.2.3.6 Set.prototype.forEach(callbackfn, thisArg = undefined)
+      // 23.1.3.5 Map.prototype.forEach(callbackfn, thisArg = undefined)
+      forEach: function forEach(callbackfn /* , that = undefined */) {
+        validate(this, NAME);
+        var f = ctx(callbackfn, arguments.length > 1 ? arguments[1] : undefined, 3);
+        var entry;
+        while (entry = entry ? entry.n : this._f) {
+          f(entry.v, entry.k, this);
+          // revert to the last existing entry
+          while (entry && entry.r) entry = entry.p;
+        }
+      },
+      // 23.1.3.7 Map.prototype.has(key)
+      // 23.2.3.7 Set.prototype.has(value)
+      has: function has(key) {
+        return !!getEntry(validate(this, NAME), key);
+      }
+    });
+    if (DESCRIPTORS) dP(C.prototype, 'size', {
+      get: function () {
+        return validate(this, NAME)[SIZE];
+      }
+    });
+    return C;
+  },
+  def: function (that, key, value) {
+    var entry = getEntry(that, key);
+    var prev, index;
+    // change existing entry
+    if (entry) {
+      entry.v = value;
+    // create new entry
+    } else {
+      that._l = entry = {
+        i: index = fastKey(key, true), // <- index
+        k: key,                        // <- key
+        v: value,                      // <- value
+        p: prev = that._l,             // <- previous entry
+        n: undefined,                  // <- next entry
+        r: false                       // <- removed
+      };
+      if (!that._f) that._f = entry;
+      if (prev) prev.n = entry;
+      that[SIZE]++;
+      // add to index
+      if (index !== 'F') that._i[index] = entry;
+    } return that;
+  },
+  getEntry: getEntry,
+  setStrong: function (C, NAME, IS_MAP) {
+    // add .keys, .values, .entries, [@@iterator]
+    // 23.1.3.4, 23.1.3.8, 23.1.3.11, 23.1.3.12, 23.2.3.5, 23.2.3.8, 23.2.3.10, 23.2.3.11
+    $iterDefine(C, NAME, function (iterated, kind) {
+      this._t = validate(iterated, NAME); // target
+      this._k = kind;                     // kind
+      this._l = undefined;                // previous
+    }, function () {
+      var that = this;
+      var kind = that._k;
+      var entry = that._l;
+      // revert to the last existing entry
+      while (entry && entry.r) entry = entry.p;
+      // get next entry
+      if (!that._t || !(that._l = entry = entry ? entry.n : that._t._f)) {
+        // or finish the iteration
+        that._t = undefined;
+        return step(1);
+      }
+      // return step by kind
+      if (kind == 'keys') return step(0, entry.k);
+      if (kind == 'values') return step(0, entry.v);
+      return step(0, [entry.k, entry.v]);
+    }, IS_MAP ? 'entries' : 'values', !IS_MAP, true);
+
+    // add [@@species], 23.1.2.2, 23.2.2.2
+    setSpecies(NAME);
+  }
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-to-json.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-to-json.js ***!
+  \************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://github.com/DavidBruant/Map-Set.prototype.toJSON
+var classof = __webpack_require__(/*! ./_classof */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_classof.js");
+var from = __webpack_require__(/*! ./_array-from-iterable */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-from-iterable.js");
+module.exports = function (NAME) {
+  return function toJSON() {
+    if (classof(this) != NAME) throw TypeError(NAME + "#toJSON isn't generic");
+    return from(this);
+  };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection.js":
+/*!****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection.js ***!
+  \****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var global = __webpack_require__(/*! ./_global */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js");
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+var meta = __webpack_require__(/*! ./_meta */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_meta.js");
+var fails = __webpack_require__(/*! ./_fails */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_fails.js");
+var hide = __webpack_require__(/*! ./_hide */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_hide.js");
+var redefineAll = __webpack_require__(/*! ./_redefine-all */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js");
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+var anInstance = __webpack_require__(/*! ./_an-instance */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js");
+var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-object.js");
+var setToStringTag = __webpack_require__(/*! ./_set-to-string-tag */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-to-string-tag.js");
+var dP = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js").f;
+var each = __webpack_require__(/*! ./_array-methods */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-methods.js")(0);
+var DESCRIPTORS = __webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js");
+
+module.exports = function (NAME, wrapper, methods, common, IS_MAP, IS_WEAK) {
+  var Base = global[NAME];
+  var C = Base;
+  var ADDER = IS_MAP ? 'set' : 'add';
+  var proto = C && C.prototype;
+  var O = {};
+  if (!DESCRIPTORS || typeof C != 'function' || !(IS_WEAK || proto.forEach && !fails(function () {
+    new C().entries().next();
+  }))) {
+    // create collection constructor
+    C = common.getConstructor(wrapper, NAME, IS_MAP, ADDER);
+    redefineAll(C.prototype, methods);
+    meta.NEED = true;
+  } else {
+    C = wrapper(function (target, iterable) {
+      anInstance(target, C, NAME, '_c');
+      target._c = new Base();
+      if (iterable != undefined) forOf(iterable, IS_MAP, target[ADDER], target);
+    });
+    each('add,clear,delete,forEach,get,has,set,keys,values,entries,toJSON'.split(','), function (KEY) {
+      var IS_ADDER = KEY == 'add' || KEY == 'set';
+      if (KEY in proto && !(IS_WEAK && KEY == 'clear')) hide(C.prototype, KEY, function (a, b) {
+        anInstance(this, C, KEY);
+        if (!IS_ADDER && IS_WEAK && !isObject(a)) return KEY == 'get' ? undefined : false;
+        var result = this._c[KEY](a === 0 ? 0 : a, b);
+        return IS_ADDER ? this : result;
+      });
+    });
+    IS_WEAK || dP(C.prototype, 'size', {
+      get: function () {
+        return this._c.size;
+      }
+    });
+  }
+
+  setToStringTag(C, NAME);
+
+  O[NAME] = C;
+  $export($export.G + $export.W + $export.F, O);
+
+  if (!IS_WEAK) common.setStrong(C, NAME, IS_MAP);
+
+  return C;
 };
 
 
@@ -1607,6 +2153,42 @@ module.exports = function (exec) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var call = __webpack_require__(/*! ./_iter-call */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js");
+var isArrayIter = __webpack_require__(/*! ./_is-array-iter */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js");
+var anObject = __webpack_require__(/*! ./_an-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js");
+var toLength = __webpack_require__(/*! ./_to-length */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-length.js");
+var getIterFn = __webpack_require__(/*! ./core.get-iterator-method */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/core.get-iterator-method.js");
+var BREAK = {};
+var RETURN = {};
+var exports = module.exports = function (iterable, entries, fn, that, ITERATOR) {
+  var iterFn = ITERATOR ? function () { return iterable; } : getIterFn(iterable);
+  var f = ctx(fn, that, entries ? 2 : 1);
+  var index = 0;
+  var length, step, iterator, result;
+  if (typeof iterFn != 'function') throw TypeError(iterable + ' is not iterable!');
+  // fast case for arrays with default iterator
+  if (isArrayIter(iterFn)) for (length = toLength(iterable.length); length > index; index++) {
+    result = entries ? f(anObject(step = iterable[index])[0], step[1]) : f(iterable[index]);
+    if (result === BREAK || result === RETURN) return result;
+  } else for (iterator = iterFn.call(iterable); !(step = iterator.next()).done;) {
+    result = call(iterator, f, step.value, entries);
+    if (result === BREAK || result === RETURN) return result;
+  }
+};
+exports.BREAK = BREAK;
+exports.RETURN = RETURN;
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js":
 /*!************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js ***!
@@ -1702,6 +2284,25 @@ module.exports = Object('z').propertyIsEnumerable(0) ? Object : function (it) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// check on default Array iterator
+var Iterators = __webpack_require__(/*! ./_iterators */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iterators.js");
+var ITERATOR = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('iterator');
+var ArrayProto = Array.prototype;
+
+module.exports = function (it) {
+  return it !== undefined && (Iterators.Array === it || ArrayProto[ITERATOR] === it);
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array.js":
 /*!**************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array.js ***!
@@ -1727,6 +2328,29 @@ module.exports = Array.isArray || function isArray(arg) {
 
 module.exports = function (it) {
   return typeof it === 'object' ? it !== null : typeof it === 'function';
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// call something on iterator step with safe closing on error
+var anObject = __webpack_require__(/*! ./_an-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js");
+module.exports = function (iterator, fn, value, entries) {
+  try {
+    return entries ? fn(anObject(value)[0], value[1]) : fn(value);
+  // 7.4.6 IteratorClose(iterator, completion)
+  } catch (e) {
+    var ret = iterator['return'];
+    if (ret !== undefined) anObject(ret.call(iterator));
+    throw e;
+  }
 };
 
 
@@ -2325,6 +2949,24 @@ module.exports = function (bitmap, value) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js ***!
+  \******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var hide = __webpack_require__(/*! ./_hide */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_hide.js");
+module.exports = function (target, src, safe) {
+  for (var key in src) {
+    if (safe && target[key]) target[key] = src[key];
+    else hide(target, key, src[key]);
+  } return target;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine.js":
 /*!**************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine.js ***!
@@ -2333,6 +2975,70 @@ module.exports = function (bitmap, value) {
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(/*! ./_hide */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_hide.js");
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-from.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-from.js ***!
+  \*************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+// https://tc39.github.io/proposal-setmap-offrom/
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+var aFunction = __webpack_require__(/*! ./_a-function */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_a-function.js");
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+
+module.exports = function (COLLECTION) {
+  $export($export.S, COLLECTION, { from: function from(source /* , mapFn, thisArg */) {
+    var mapFn = arguments[1];
+    var mapping, A, n, cb;
+    aFunction(this);
+    mapping = mapFn !== undefined;
+    if (mapping) aFunction(mapFn);
+    if (source == undefined) return new this();
+    A = [];
+    if (mapping) {
+      n = 0;
+      cb = ctx(mapFn, arguments[2], 2);
+      forOf(source, false, function (nextItem) {
+        A.push(cb(nextItem, n++));
+      });
+    } else {
+      forOf(source, false, A.push, A);
+    }
+    return new this(A);
+  } });
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-of.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-of.js ***!
+  \***********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+// https://tc39.github.io/proposal-setmap-offrom/
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+
+module.exports = function (COLLECTION) {
+  $export($export.S, COLLECTION, { of: function of() {
+    var length = arguments.length;
+    var A = new Array(length);
+    while (length--) A[length] = arguments[length];
+    return new this(A);
+  } });
+};
 
 
 /***/ }),
@@ -2368,6 +3074,32 @@ module.exports = {
       };
     }({}, false) : undefined),
   check: check
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-species.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-species.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var global = __webpack_require__(/*! ./_global */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js");
+var core = __webpack_require__(/*! ./_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js");
+var dP = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js");
+var DESCRIPTORS = __webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js");
+var SPECIES = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('species');
+
+module.exports = function (KEY) {
+  var C = typeof core[KEY] == 'function' ? core[KEY] : global[KEY];
+  if (DESCRIPTORS && C && !C[SPECIES]) dP.f(C, SPECIES, {
+    configurable: true,
+    get: function () { return this; }
+  });
 };
 
 
@@ -2582,6 +3314,22 @@ module.exports = function (key) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js ***!
+  \*************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-object.js");
+module.exports = function (it, TYPE) {
+  if (!isObject(it) || it._t !== TYPE) throw TypeError('Incompatible receiver, ' + TYPE + ' required!');
+  return it;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks-define.js":
 /*!****************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks-define.js ***!
@@ -2636,6 +3384,25 @@ $exports.store = store;
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/core.get-iterator-method.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/core.get-iterator-method.js ***!
+  \*****************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var classof = __webpack_require__(/*! ./_classof */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_classof.js");
+var ITERATOR = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('iterator');
+var Iterators = __webpack_require__(/*! ./_iterators */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iterators.js");
+module.exports = __webpack_require__(/*! ./_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js").getIteratorMethod = function (it) {
+  if (it != undefined) return it[ITERATOR]
+    || it['@@iterator']
+    || Iterators[classof(it)];
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.array.iterator.js":
 /*!***********************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.array.iterator.js ***!
@@ -2678,6 +3445,37 @@ Iterators.Arguments = Iterators.Array;
 addToUnscopables('keys');
 addToUnscopables('values');
 addToUnscopables('entries');
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.map.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.map.js ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var strong = __webpack_require__(/*! ./_collection-strong */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-strong.js");
+var validate = __webpack_require__(/*! ./_validate-collection */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js");
+var MAP = 'Map';
+
+// 23.1 Map Objects
+module.exports = __webpack_require__(/*! ./_collection */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection.js")(MAP, function (get) {
+  return function Map() { return get(this, arguments.length > 0 ? arguments[0] : undefined); };
+}, {
+  // 23.1.3.6 Map.prototype.get(key)
+  get: function get(key) {
+    var entry = strong.getEntry(validate(this, MAP), key);
+    return entry && entry.v;
+  },
+  // 23.1.3.9 Map.prototype.set(key, value)
+  set: function set(key, value) {
+    return strong.def(validate(this, MAP), key === 0 ? 0 : key, value);
+  }
+}, strong, true);
 
 
 /***/ }),
@@ -3041,6 +3839,47 @@ setToStringTag($Symbol, 'Symbol');
 setToStringTag(Math, 'Math', true);
 // 24.3.3 JSON[@@toStringTag]
 setToStringTag(global.JSON, 'JSON', true);
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.from.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.from.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://tc39.github.io/proposal-setmap-offrom/#sec-map.from
+__webpack_require__(/*! ./_set-collection-from */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-from.js")('Map');
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.of.js":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.of.js ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://tc39.github.io/proposal-setmap-offrom/#sec-map.of
+__webpack_require__(/*! ./_set-collection-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-of.js")('Map');
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.to-json.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.to-json.js ***!
+  \********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://github.com/DavidBruant/Map-Set.prototype.toJSON
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+
+$export($export.P + $export.R, 'Map', { toJSON: __webpack_require__(/*! ./_collection-to-json */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-to-json.js")('Map') });
 
 
 /***/ }),

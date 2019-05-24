@@ -87,6 +87,26 @@ var index =
 /************************************************************************/
 /******/ ({
 
+/***/ "./dev/js/const/enums.js":
+/*!*******************************!*\
+  !*** ./dev/js/const/enums.js ***!
+  \*******************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+var TaskTypeEnum = exports.TaskTypeEnum = {
+	Task1: 'task1',
+	Task2: 'task2'
+};
+
+/***/ }),
+
 /***/ "./dev/js/index.jsx":
 /*!**************************!*\
   !*** ./dev/js/index.jsx ***!
@@ -117,182 +137,194 @@ var _authors = __webpack_require__(/*! ../text/authors.txt */ "./dev/text/author
 
 var _authors2 = _interopRequireDefault(_authors);
 
+var _enums = __webpack_require__(/*! ./const/enums */ "./dev/js/const/enums.js");
+
+var _algorithms = __webpack_require__(/*! ./stores/algorithms */ "./dev/js/stores/algorithms.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function ipcSend(msgType, obj) {
-    win.webContents.send(msgType, obj);
+	win.webContents.send(msgType, obj);
 }
 
 function clearGraph() {
-    ipcSend("clear-graph", {});
+	ipcSend("clear-graph", {});
 }
 
 function openFile() {
-    _electron.dialog.showOpenDialog({
-        title: "Select graph file",
-        properties: ["openFile"],
-        filters: [{ name: "All formats", extensions: ["evf", "imgd", "amgd"] }, { name: "Edges/Vertices format", extensions: ["evf"] }, { name: "Incidence matrix", extensions: ["imgd"] }, { name: "Adjacency matrix", extensions: ["amgd"] }]
-    }, function (filePaths) {
-        console.log(filePaths);
-        if (filePaths === undefined) {
-            console.log("Nothing selected");
-            return;
-        }
+	_electron.dialog.showOpenDialog({
+		title: "Select graph file",
+		properties: ["openFile"],
+		filters: [{ name: "All formats", extensions: ["evf", "imgd", "amgd"] }, { name: "Edges/Vertices format", extensions: ["evf"] }, { name: "Incidence matrix", extensions: ["imgd"] }, { name: "Adjacency matrix", extensions: ["amgd"] }]
+	}, function (filePaths) {
+		console.log(filePaths);
+		if (filePaths === undefined) {
+			console.log("Nothing selected");
+			return;
+		}
 
-        var filename = filePaths[0];
-        var decodeFunc = null;
+		var filename = filePaths[0];
+		var decodeFunc = null;
 
-        if (_path2.default.extname(filename) === '.evf') decodeFunc = _saveFileTools.evfDecode;else if (_path2.default.extname(filename) === '.imgd') decodeFunc = _saveFileTools.imgdDecode;else if (_path2.default.extname(filename) === '.amgd') decodeFunc = _saveFileTools.amgdDecode;
+		if (_path2.default.extname(filename) === '.evf') decodeFunc = _saveFileTools.evfDecode;else if (_path2.default.extname(filename) === '.imgd') decodeFunc = _saveFileTools.imgdDecode;else if (_path2.default.extname(filename) === '.amgd') decodeFunc = _saveFileTools.amgdDecode;
 
-        if (decodeFunc !== null) {
-            _fs2.default.readFile(filename, 'utf8', function (err, data) {
-                var graphData = decodeFunc(data);
-                console.log(graphData);
-                ipcSend("set-graph", graphData);
-            });
-        }
-    });
+		if (decodeFunc !== null) {
+			_fs2.default.readFile(filename, 'utf8', function (err, data) {
+				var graphData = decodeFunc(data);
+				console.log(graphData);
+				ipcSend("set-graph", graphData);
+			});
+		}
+	});
 }
 
 function saveAsIncidenceMatrix() {
-    _electron.dialog.showSaveDialog({
-        title: "Save as incidence matrix",
-        filters: [{ name: "Incidence matrix", extensions: ["imgd"] }, { name: "All files", extensions: ["*"] }]
-    }, function (filename) {
-        if (filename === undefined) return;
+	_electron.dialog.showSaveDialog({
+		title: "Save as incidence matrix",
+		filters: [{ name: "Incidence matrix", extensions: ["imgd"] }, { name: "All files", extensions: ["*"] }]
+	}, function (filename) {
+		if (filename === undefined) return;
 
-        ipcSend("request-save-collection", null);
-        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
-            var fileObj = (0, _saveFileTools.imgdEncode)(obj);
-            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
-                if (err) return ipcSend("save-error", err);
-                ipcSend("save-success", null);
-            });else ipcSend("save-error", 'Error saving in .imgd format');
-        });
-    });
+		ipcSend("request-save-collection", null);
+		_electron.ipcMain.once("send-save-collection", function (sender, obj) {
+			var fileObj = (0, _saveFileTools.imgdEncode)(obj);
+			if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+				if (err) return ipcSend("save-error", err);
+				ipcSend("save-success", null);
+			});else ipcSend("save-error", 'Error saving in .imgd format');
+		});
+	});
 }
 
 function saveAsAdjacencyMatrix() {
-    _electron.dialog.showSaveDialog({
-        title: "Save as incidence matrix",
-        filters: [{ name: "Adjacency matrix", extensions: ["amgd"] }, { name: "All files", extensions: ["*"] }]
-    }, function (filename) {
-        if (filename === undefined) return;
+	_electron.dialog.showSaveDialog({
+		title: "Save as incidence matrix",
+		filters: [{ name: "Adjacency matrix", extensions: ["amgd"] }, { name: "All files", extensions: ["*"] }]
+	}, function (filename) {
+		if (filename === undefined) return;
 
-        ipcSend("request-save-collection", null);
-        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
-            var fileObj = (0, _saveFileTools.amgdEncode)(obj);
-            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
-                if (err) return ipcSend("save-error", err);
-                ipcSend("save-success", null);
-            });else ipcSend("save-error", 'Error saving in .imgd format');
-        });
-    });
+		ipcSend("request-save-collection", null);
+		_electron.ipcMain.once("send-save-collection", function (sender, obj) {
+			var fileObj = (0, _saveFileTools.amgdEncode)(obj);
+			if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+				if (err) return ipcSend("save-error", err);
+				ipcSend("save-success", null);
+			});else ipcSend("save-error", 'Error saving in .imgd format');
+		});
+	});
 }
 
 function saveAsEdgesVertices() {
-    _electron.dialog.showSaveDialog({
-        title: "Save as incidence matrix",
-        filters: [{ name: "Edges/Vertices format", extensions: ["evf"] }, { name: "All files", extensions: ["*"] }]
-    }, function (filename) {
-        if (filename === undefined) return;
+	_electron.dialog.showSaveDialog({
+		title: "Save as incidence matrix",
+		filters: [{ name: "Edges/Vertices format", extensions: ["evf"] }, { name: "All files", extensions: ["*"] }]
+	}, function (filename) {
+		if (filename === undefined) return;
 
-        ipcSend("request-save-collection", null);
-        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
-            var fileObj = (0, _saveFileTools.evfEncode)(obj);
-            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
-                if (err) return ipcSend("save-error", err);
-                ipcSend("save-success", null);
-            });else ipcSend("save-error", 'Error saving in .evf format');
-        });
-    });
+		ipcSend("request-save-collection", null);
+		_electron.ipcMain.once("send-save-collection", function (sender, obj) {
+			var fileObj = (0, _saveFileTools.evfEncode)(obj);
+			if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+				if (err) return ipcSend("save-error", err);
+				ipcSend("save-success", null);
+			});else ipcSend("save-error", 'Error saving in .evf format');
+		});
+	});
 }
 
 // Display dialog box with instructions how to use this program
 function displayHelp() {
-    _electron.dialog.showMessageBox({
-        type: "none",
-        buttons: ["Close"],
-        title: "How to use this application",
-        message: _help2.default
-    }, function () {});
+	_electron.dialog.showMessageBox({
+		type: "none",
+		buttons: ["Close"],
+		title: "How to use this application",
+		message: _help2.default
+	}, function () {});
 }
 
 // Display dialog box with info about authors
 function displayAuthors() {
-    _electron.dialog.showMessageBox({
-        type: "none",
-        buttons: ["Close"],
-        title: "Authors",
-        message: _authors2.default
-    }, function () {});
+	_electron.dialog.showMessageBox({
+		type: "none",
+		buttons: ["Close"],
+		title: "Authors",
+		message: _authors2.default
+	}, function () {});
 }
 
 var win = void 0;
 function createWindow() {
-    win = new _electron.BrowserWindow({
-        width: 1000,
-        height: 700,
-        minWidth: 1000,
-        webPreferences: {
-            nodeIntegration: true
-        }
-    });
-    win.loadFile('app/index.html');
-    var mainMenu = new _electron.Menu.buildFromTemplate([{
-        label: "File",
-        type: "submenu",
-        submenu: [{
-            label: "New graph",
-            accelerator: "CommandOrControl+N",
-            click: clearGraph
-        }, {
-            label: "Open...",
-            accelerator: "CommandOrControl+O",
-            click: openFile
-        }, {
-            label: "Save as",
-            type: "submenu",
-            submenu: [{
-                label: "Incidence matrix",
-                click: saveAsIncidenceMatrix
-            }, {
-                label: "Adjacency matrix",
-                click: saveAsAdjacencyMatrix
-            }, {
-                label: "Edges/Vertices format",
-                accelerator: "CommandOrControl+S",
-                click: saveAsEdgesVertices
-            }]
-        }, {
-            label: "Exit",
-            click: function click() {
-                return _electron.app.quit();
-            }
-        }]
-    }, {
-        label: "Theory of graph tasks",
-        type: "submenu",
-        submenu: [{
-            label: "To be added",
-            enabled: false
-        }]
-    }, {
-        label: "About",
-        type: "submenu",
-        submenu: [{
-            label: "Help",
-            accelerator: "F1",
-            click: displayHelp
-        }, {
-            label: "Authors",
-            click: displayAuthors
-        }]
-    }, {
-        label: "Show dev toolbar",
-        role: "toggledevtools"
-    }]);
-    _electron.Menu.setApplicationMenu(mainMenu);
+	win = new _electron.BrowserWindow({
+		width: 1000,
+		height: 700,
+		minWidth: 1000,
+		webPreferences: {
+			nodeIntegration: true
+		}
+	});
+	win.loadFile('app/index.html');
+	var mainMenu = new _electron.Menu.buildFromTemplate([{
+		label: "File",
+		type: "submenu",
+		submenu: [{
+			label: 'Dev Tools',
+			submenu: [{
+				label: "Show dev toolbar",
+				role: "toggledevtools"
+			}, {
+				label: "Reload",
+				role: "forcereload"
+			}]
+		}, {
+			label: "New graph",
+			accelerator: "CommandOrControl+N",
+			click: clearGraph
+		}, {
+			label: "Open...",
+			accelerator: "CommandOrControl+O",
+			click: openFile
+		}, {
+			label: "Save as",
+			type: "submenu",
+			submenu: [{
+				label: "Incidence matrix",
+				click: saveAsIncidenceMatrix
+			}, {
+				label: "Adjacency matrix",
+				click: saveAsAdjacencyMatrix
+			}, {
+				label: "Edges/Vertices format",
+				accelerator: "CommandOrControl+S",
+				click: saveAsEdgesVertices
+			}]
+		}, {
+			label: "Exit",
+			click: function click() {
+				return _electron.app.quit();
+			}
+		}]
+	}, {
+		label: "Theory of graph tasks",
+		type: "submenu",
+		submenu: [{
+			label: 'Task 1',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Task1);
+			}
+		}]
+	}, {
+		label: "About",
+		type: "submenu",
+		submenu: [{
+			label: "Help",
+			accelerator: "F1",
+			click: displayHelp
+		}, {
+			label: "Authors",
+			click: displayAuthors
+		}]
+	}]);
+	_electron.Menu.setApplicationMenu(mainMenu);
 }
 
 process.env.ELECTRON_ENABLE_LOGGING = true;
@@ -300,7 +332,7 @@ process.env.ELECTRON_ENABLE_LOGGING = true;
 _electron.app.on('ready', createWindow);
 
 _electron.app.on('window-all-closed', function () {
-    _electron.app.quit();
+	_electron.app.quit();
 });
 
 /***/ }),
@@ -941,6 +973,79 @@ function amgdEncode(collection) {
         content: (0, _stringify2.default)(matrix)
     };
 }
+
+/***/ }),
+
+/***/ "./dev/js/stores/algorithms.js":
+/*!*************************************!*\
+  !*** ./dev/js/stores/algorithms.js ***!
+  \*************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+exports.InitAlgorithms = undefined;
+
+var _map = __webpack_require__(/*! babel-runtime/core-js/map */ "./node_modules/babel-runtime/core-js/map.js");
+
+var _map2 = _interopRequireDefault(_map);
+
+var _classCallCheck2 = __webpack_require__(/*! babel-runtime/helpers/classCallCheck */ "./node_modules/babel-runtime/helpers/classCallCheck.js");
+
+var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
+
+var _createClass2 = __webpack_require__(/*! babel-runtime/helpers/createClass */ "./node_modules/babel-runtime/helpers/createClass.js");
+
+var _createClass3 = _interopRequireDefault(_createClass2);
+
+var _enums = __webpack_require__(/*! ../const/enums */ "./dev/js/const/enums.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var InitAlgorithms = exports.InitAlgorithms = function () {
+	function InitAlgorithms() {
+		(0, _classCallCheck3.default)(this, InitAlgorithms);
+	}
+
+	(0, _createClass3.default)(InitAlgorithms, null, [{
+		key: 'create',
+		value: function create() {
+			var tasks = new _map2.default();
+			var alg = new AlgorithmsStore();
+
+			tasks.set(_enums.TaskTypeEnum.Task1, alg.task1);
+			tasks.set(_enums.TaskTypeEnum.Task2, alg.task2);
+
+			return tasks;
+		}
+	}]);
+	return InitAlgorithms;
+}();
+
+var AlgorithmsStore = function () {
+	function AlgorithmsStore() {
+		(0, _classCallCheck3.default)(this, AlgorithmsStore);
+	}
+
+	(0, _createClass3.default)(AlgorithmsStore, [{
+		key: 'task1',
+		value: function task1() {
+			console.log('1');
+		}
+	}, {
+		key: 'task2',
+		value: function task2() {
+
+			console.log('4');
+		}
+	}]);
+	return AlgorithmsStore;
+}();
 
 /***/ }),
 
@@ -2491,6 +2596,17 @@ module.exports = { "default": __webpack_require__(/*! core-js/library/fn/json/st
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/core-js/map.js":
+/*!***************************************************!*\
+  !*** ./node_modules/babel-runtime/core-js/map.js ***!
+  \***************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = { "default": __webpack_require__(/*! core-js/library/fn/map */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/map.js"), __esModule: true };
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/core-js/number/is-integer.js":
 /*!*****************************************************************!*\
   !*** ./node_modules/babel-runtime/core-js/number/is-integer.js ***!
@@ -2510,6 +2626,17 @@ module.exports = { "default": __webpack_require__(/*! core-js/library/fn/number/
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = { "default": __webpack_require__(/*! core-js/library/fn/object/define-properties */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/object/define-properties.js"), __esModule: true };
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/core-js/object/define-property.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/babel-runtime/core-js/object/define-property.js ***!
+  \**********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = { "default": __webpack_require__(/*! core-js/library/fn/object/define-property */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/object/define-property.js"), __esModule: true };
 
 /***/ }),
 
@@ -2554,6 +2681,64 @@ module.exports = { "default": __webpack_require__(/*! core-js/library/fn/symbol 
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = { "default": __webpack_require__(/*! core-js/library/fn/symbol/iterator */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/symbol/iterator.js"), __esModule: true };
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/helpers/classCallCheck.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/babel-runtime/helpers/classCallCheck.js ***!
+  \**************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.__esModule = true;
+
+exports.default = function (instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+};
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/helpers/createClass.js":
+/*!***********************************************************!*\
+  !*** ./node_modules/babel-runtime/helpers/createClass.js ***!
+  \***********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.__esModule = true;
+
+var _defineProperty = __webpack_require__(/*! ../core-js/object/define-property */ "./node_modules/babel-runtime/core-js/object/define-property.js");
+
+var _defineProperty2 = _interopRequireDefault(_defineProperty);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function () {
+  function defineProperties(target, props) {
+    for (var i = 0; i < props.length; i++) {
+      var descriptor = props[i];
+      descriptor.enumerable = descriptor.enumerable || false;
+      descriptor.configurable = true;
+      if ("value" in descriptor) descriptor.writable = true;
+      (0, _defineProperty2.default)(target, descriptor.key, descriptor);
+    }
+  }
+
+  return function (Constructor, protoProps, staticProps) {
+    if (protoProps) defineProperties(Constructor.prototype, protoProps);
+    if (staticProps) defineProperties(Constructor, staticProps);
+    return Constructor;
+  };
+}();
 
 /***/ }),
 
@@ -2651,6 +2836,25 @@ module.exports = function stringify(it) { // eslint-disable-line no-unused-vars
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/map.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/map.js ***!
+  \***************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(/*! ../modules/es6.object.to-string */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.object.to-string.js");
+__webpack_require__(/*! ../modules/es6.string.iterator */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.string.iterator.js");
+__webpack_require__(/*! ../modules/web.dom.iterable */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/web.dom.iterable.js");
+__webpack_require__(/*! ../modules/es6.map */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.map.js");
+__webpack_require__(/*! ../modules/es7.map.to-json */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.to-json.js");
+__webpack_require__(/*! ../modules/es7.map.of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.of.js");
+__webpack_require__(/*! ../modules/es7.map.from */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.from.js");
+module.exports = __webpack_require__(/*! ../modules/_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js").Map;
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/number/is-integer.js":
 /*!*****************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/number/is-integer.js ***!
@@ -2675,6 +2879,22 @@ __webpack_require__(/*! ../../modules/es6.object.define-properties */ "./node_mo
 var $Object = __webpack_require__(/*! ../../modules/_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js").Object;
 module.exports = function defineProperties(T, D) {
   return $Object.defineProperties(T, D);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/object/define-property.js":
+/*!**********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/object/define-property.js ***!
+  \**********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(/*! ../../modules/es6.object.define-property */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.object.define-property.js");
+var $Object = __webpack_require__(/*! ../../modules/_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js").Object;
+module.exports = function defineProperty(it, key, desc) {
+  return $Object.defineProperty(it, key, desc);
 };
 
 
@@ -2763,6 +2983,22 @@ module.exports = function () { /* empty */ };
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = function (it, Constructor, name, forbiddenField) {
+  if (!(it instanceof Constructor) || (forbiddenField !== undefined && forbiddenField in it)) {
+    throw TypeError(name + ': incorrect invocation!');
+  } return it;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js":
 /*!***************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js ***!
@@ -2774,6 +3010,24 @@ var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-run
 module.exports = function (it) {
   if (!isObject(it)) throw TypeError(it + ' is not an object!');
   return it;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-from-iterable.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-from-iterable.js ***!
+  \*************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+
+module.exports = function (iter, ITERATOR) {
+  var result = [];
+  forOf(iter, false, result.push, result, ITERATOR);
+  return result;
 };
 
 
@@ -2808,6 +3062,105 @@ module.exports = function (IS_INCLUDES) {
       if (O[index] === el) return IS_INCLUDES || index || 0;
     } return !IS_INCLUDES && -1;
   };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-methods.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-methods.js ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// 0 -> Array#forEach
+// 1 -> Array#map
+// 2 -> Array#filter
+// 3 -> Array#some
+// 4 -> Array#every
+// 5 -> Array#find
+// 6 -> Array#findIndex
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var IObject = __webpack_require__(/*! ./_iobject */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iobject.js");
+var toObject = __webpack_require__(/*! ./_to-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-object.js");
+var toLength = __webpack_require__(/*! ./_to-length */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-length.js");
+var asc = __webpack_require__(/*! ./_array-species-create */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-create.js");
+module.exports = function (TYPE, $create) {
+  var IS_MAP = TYPE == 1;
+  var IS_FILTER = TYPE == 2;
+  var IS_SOME = TYPE == 3;
+  var IS_EVERY = TYPE == 4;
+  var IS_FIND_INDEX = TYPE == 6;
+  var NO_HOLES = TYPE == 5 || IS_FIND_INDEX;
+  var create = $create || asc;
+  return function ($this, callbackfn, that) {
+    var O = toObject($this);
+    var self = IObject(O);
+    var f = ctx(callbackfn, that, 3);
+    var length = toLength(self.length);
+    var index = 0;
+    var result = IS_MAP ? create($this, length) : IS_FILTER ? create($this, 0) : undefined;
+    var val, res;
+    for (;length > index; index++) if (NO_HOLES || index in self) {
+      val = self[index];
+      res = f(val, index, O);
+      if (TYPE) {
+        if (IS_MAP) result[index] = res;   // map
+        else if (res) switch (TYPE) {
+          case 3: return true;             // some
+          case 5: return val;              // find
+          case 6: return index;            // findIndex
+          case 2: result.push(val);        // filter
+        } else if (IS_EVERY) return false; // every
+      }
+    }
+    return IS_FIND_INDEX ? -1 : IS_SOME || IS_EVERY ? IS_EVERY : result;
+  };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-constructor.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-constructor.js ***!
+  \*******************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-object.js");
+var isArray = __webpack_require__(/*! ./_is-array */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array.js");
+var SPECIES = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('species');
+
+module.exports = function (original) {
+  var C;
+  if (isArray(original)) {
+    C = original.constructor;
+    // cross-realm fallback
+    if (typeof C == 'function' && (C === Array || isArray(C.prototype))) C = undefined;
+    if (isObject(C)) {
+      C = C[SPECIES];
+      if (C === null) C = undefined;
+    }
+  } return C === undefined ? Array : C;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-create.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-create.js ***!
+  \**************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// 9.4.2.3 ArraySpeciesCreate(originalArray, length)
+var speciesConstructor = __webpack_require__(/*! ./_array-species-constructor */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-species-constructor.js");
+
+module.exports = function (original, length) {
+  return new (speciesConstructor(original))(length);
 };
 
 
@@ -2858,6 +3211,253 @@ var toString = {}.toString;
 
 module.exports = function (it) {
   return toString.call(it).slice(8, -1);
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-strong.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-strong.js ***!
+  \***********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var dP = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js").f;
+var create = __webpack_require__(/*! ./_object-create */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-create.js");
+var redefineAll = __webpack_require__(/*! ./_redefine-all */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js");
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var anInstance = __webpack_require__(/*! ./_an-instance */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js");
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+var $iterDefine = __webpack_require__(/*! ./_iter-define */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-define.js");
+var step = __webpack_require__(/*! ./_iter-step */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-step.js");
+var setSpecies = __webpack_require__(/*! ./_set-species */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-species.js");
+var DESCRIPTORS = __webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js");
+var fastKey = __webpack_require__(/*! ./_meta */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_meta.js").fastKey;
+var validate = __webpack_require__(/*! ./_validate-collection */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js");
+var SIZE = DESCRIPTORS ? '_s' : 'size';
+
+var getEntry = function (that, key) {
+  // fast case
+  var index = fastKey(key);
+  var entry;
+  if (index !== 'F') return that._i[index];
+  // frozen object case
+  for (entry = that._f; entry; entry = entry.n) {
+    if (entry.k == key) return entry;
+  }
+};
+
+module.exports = {
+  getConstructor: function (wrapper, NAME, IS_MAP, ADDER) {
+    var C = wrapper(function (that, iterable) {
+      anInstance(that, C, NAME, '_i');
+      that._t = NAME;         // collection type
+      that._i = create(null); // index
+      that._f = undefined;    // first entry
+      that._l = undefined;    // last entry
+      that[SIZE] = 0;         // size
+      if (iterable != undefined) forOf(iterable, IS_MAP, that[ADDER], that);
+    });
+    redefineAll(C.prototype, {
+      // 23.1.3.1 Map.prototype.clear()
+      // 23.2.3.2 Set.prototype.clear()
+      clear: function clear() {
+        for (var that = validate(this, NAME), data = that._i, entry = that._f; entry; entry = entry.n) {
+          entry.r = true;
+          if (entry.p) entry.p = entry.p.n = undefined;
+          delete data[entry.i];
+        }
+        that._f = that._l = undefined;
+        that[SIZE] = 0;
+      },
+      // 23.1.3.3 Map.prototype.delete(key)
+      // 23.2.3.4 Set.prototype.delete(value)
+      'delete': function (key) {
+        var that = validate(this, NAME);
+        var entry = getEntry(that, key);
+        if (entry) {
+          var next = entry.n;
+          var prev = entry.p;
+          delete that._i[entry.i];
+          entry.r = true;
+          if (prev) prev.n = next;
+          if (next) next.p = prev;
+          if (that._f == entry) that._f = next;
+          if (that._l == entry) that._l = prev;
+          that[SIZE]--;
+        } return !!entry;
+      },
+      // 23.2.3.6 Set.prototype.forEach(callbackfn, thisArg = undefined)
+      // 23.1.3.5 Map.prototype.forEach(callbackfn, thisArg = undefined)
+      forEach: function forEach(callbackfn /* , that = undefined */) {
+        validate(this, NAME);
+        var f = ctx(callbackfn, arguments.length > 1 ? arguments[1] : undefined, 3);
+        var entry;
+        while (entry = entry ? entry.n : this._f) {
+          f(entry.v, entry.k, this);
+          // revert to the last existing entry
+          while (entry && entry.r) entry = entry.p;
+        }
+      },
+      // 23.1.3.7 Map.prototype.has(key)
+      // 23.2.3.7 Set.prototype.has(value)
+      has: function has(key) {
+        return !!getEntry(validate(this, NAME), key);
+      }
+    });
+    if (DESCRIPTORS) dP(C.prototype, 'size', {
+      get: function () {
+        return validate(this, NAME)[SIZE];
+      }
+    });
+    return C;
+  },
+  def: function (that, key, value) {
+    var entry = getEntry(that, key);
+    var prev, index;
+    // change existing entry
+    if (entry) {
+      entry.v = value;
+    // create new entry
+    } else {
+      that._l = entry = {
+        i: index = fastKey(key, true), // <- index
+        k: key,                        // <- key
+        v: value,                      // <- value
+        p: prev = that._l,             // <- previous entry
+        n: undefined,                  // <- next entry
+        r: false                       // <- removed
+      };
+      if (!that._f) that._f = entry;
+      if (prev) prev.n = entry;
+      that[SIZE]++;
+      // add to index
+      if (index !== 'F') that._i[index] = entry;
+    } return that;
+  },
+  getEntry: getEntry,
+  setStrong: function (C, NAME, IS_MAP) {
+    // add .keys, .values, .entries, [@@iterator]
+    // 23.1.3.4, 23.1.3.8, 23.1.3.11, 23.1.3.12, 23.2.3.5, 23.2.3.8, 23.2.3.10, 23.2.3.11
+    $iterDefine(C, NAME, function (iterated, kind) {
+      this._t = validate(iterated, NAME); // target
+      this._k = kind;                     // kind
+      this._l = undefined;                // previous
+    }, function () {
+      var that = this;
+      var kind = that._k;
+      var entry = that._l;
+      // revert to the last existing entry
+      while (entry && entry.r) entry = entry.p;
+      // get next entry
+      if (!that._t || !(that._l = entry = entry ? entry.n : that._t._f)) {
+        // or finish the iteration
+        that._t = undefined;
+        return step(1);
+      }
+      // return step by kind
+      if (kind == 'keys') return step(0, entry.k);
+      if (kind == 'values') return step(0, entry.v);
+      return step(0, [entry.k, entry.v]);
+    }, IS_MAP ? 'entries' : 'values', !IS_MAP, true);
+
+    // add [@@species], 23.1.2.2, 23.2.2.2
+    setSpecies(NAME);
+  }
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-to-json.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-to-json.js ***!
+  \************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://github.com/DavidBruant/Map-Set.prototype.toJSON
+var classof = __webpack_require__(/*! ./_classof */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_classof.js");
+var from = __webpack_require__(/*! ./_array-from-iterable */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-from-iterable.js");
+module.exports = function (NAME) {
+  return function toJSON() {
+    if (classof(this) != NAME) throw TypeError(NAME + "#toJSON isn't generic");
+    return from(this);
+  };
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection.js":
+/*!****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection.js ***!
+  \****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var global = __webpack_require__(/*! ./_global */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js");
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+var meta = __webpack_require__(/*! ./_meta */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_meta.js");
+var fails = __webpack_require__(/*! ./_fails */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_fails.js");
+var hide = __webpack_require__(/*! ./_hide */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_hide.js");
+var redefineAll = __webpack_require__(/*! ./_redefine-all */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js");
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+var anInstance = __webpack_require__(/*! ./_an-instance */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-instance.js");
+var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-object.js");
+var setToStringTag = __webpack_require__(/*! ./_set-to-string-tag */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-to-string-tag.js");
+var dP = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js").f;
+var each = __webpack_require__(/*! ./_array-methods */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_array-methods.js")(0);
+var DESCRIPTORS = __webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js");
+
+module.exports = function (NAME, wrapper, methods, common, IS_MAP, IS_WEAK) {
+  var Base = global[NAME];
+  var C = Base;
+  var ADDER = IS_MAP ? 'set' : 'add';
+  var proto = C && C.prototype;
+  var O = {};
+  if (!DESCRIPTORS || typeof C != 'function' || !(IS_WEAK || proto.forEach && !fails(function () {
+    new C().entries().next();
+  }))) {
+    // create collection constructor
+    C = common.getConstructor(wrapper, NAME, IS_MAP, ADDER);
+    redefineAll(C.prototype, methods);
+    meta.NEED = true;
+  } else {
+    C = wrapper(function (target, iterable) {
+      anInstance(target, C, NAME, '_c');
+      target._c = new Base();
+      if (iterable != undefined) forOf(iterable, IS_MAP, target[ADDER], target);
+    });
+    each('add,clear,delete,forEach,get,has,set,keys,values,entries,toJSON'.split(','), function (KEY) {
+      var IS_ADDER = KEY == 'add' || KEY == 'set';
+      if (KEY in proto && !(IS_WEAK && KEY == 'clear')) hide(C.prototype, KEY, function (a, b) {
+        anInstance(this, C, KEY);
+        if (!IS_ADDER && IS_WEAK && !isObject(a)) return KEY == 'get' ? undefined : false;
+        var result = this._c[KEY](a === 0 ? 0 : a, b);
+        return IS_ADDER ? this : result;
+      });
+    });
+    IS_WEAK || dP(C.prototype, 'size', {
+      get: function () {
+        return this._c.size;
+      }
+    });
+  }
+
+  setToStringTag(C, NAME);
+
+  O[NAME] = C;
+  $export($export.G + $export.W + $export.F, O);
+
+  if (!IS_WEAK) common.setStrong(C, NAME, IS_MAP);
+
+  return C;
 };
 
 
@@ -3088,6 +3688,42 @@ module.exports = function (exec) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var call = __webpack_require__(/*! ./_iter-call */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js");
+var isArrayIter = __webpack_require__(/*! ./_is-array-iter */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js");
+var anObject = __webpack_require__(/*! ./_an-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js");
+var toLength = __webpack_require__(/*! ./_to-length */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-length.js");
+var getIterFn = __webpack_require__(/*! ./core.get-iterator-method */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/core.get-iterator-method.js");
+var BREAK = {};
+var RETURN = {};
+var exports = module.exports = function (iterable, entries, fn, that, ITERATOR) {
+  var iterFn = ITERATOR ? function () { return iterable; } : getIterFn(iterable);
+  var f = ctx(fn, that, entries ? 2 : 1);
+  var index = 0;
+  var length, step, iterator, result;
+  if (typeof iterFn != 'function') throw TypeError(iterable + ' is not iterable!');
+  // fast case for arrays with default iterator
+  if (isArrayIter(iterFn)) for (length = toLength(iterable.length); length > index; index++) {
+    result = entries ? f(anObject(step = iterable[index])[0], step[1]) : f(iterable[index]);
+    if (result === BREAK || result === RETURN) return result;
+  } else for (iterator = iterFn.call(iterable); !(step = iterator.next()).done;) {
+    result = call(iterator, f, step.value, entries);
+    if (result === BREAK || result === RETURN) return result;
+  }
+};
+exports.BREAK = BREAK;
+exports.RETURN = RETURN;
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js":
 /*!************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js ***!
@@ -3183,6 +3819,25 @@ module.exports = Object('z').propertyIsEnumerable(0) ? Object : function (it) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// check on default Array iterator
+var Iterators = __webpack_require__(/*! ./_iterators */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iterators.js");
+var ITERATOR = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('iterator');
+var ArrayProto = Array.prototype;
+
+module.exports = function (it) {
+  return it !== undefined && (Iterators.Array === it || ArrayProto[ITERATOR] === it);
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array.js":
 /*!**************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array.js ***!
@@ -3225,6 +3880,29 @@ module.exports = function isInteger(it) {
 
 module.exports = function (it) {
   return typeof it === 'object' ? it !== null : typeof it === 'function';
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// call something on iterator step with safe closing on error
+var anObject = __webpack_require__(/*! ./_an-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_an-object.js");
+module.exports = function (iterator, fn, value, entries) {
+  try {
+    return entries ? fn(anObject(value)[0], value[1]) : fn(value);
+  // 7.4.6 IteratorClose(iterator, completion)
+  } catch (e) {
+    var ret = iterator['return'];
+    if (ret !== undefined) anObject(ret.call(iterator));
+    throw e;
+  }
 };
 
 
@@ -3750,6 +4428,24 @@ module.exports = function (bitmap, value) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine-all.js ***!
+  \******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var hide = __webpack_require__(/*! ./_hide */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_hide.js");
+module.exports = function (target, src, safe) {
+  for (var key in src) {
+    if (safe && target[key]) target[key] = src[key];
+    else hide(target, key, src[key]);
+  } return target;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine.js":
 /*!**************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_redefine.js ***!
@@ -3758,6 +4454,96 @@ module.exports = function (bitmap, value) {
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__(/*! ./_hide */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_hide.js");
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-from.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-from.js ***!
+  \*************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+// https://tc39.github.io/proposal-setmap-offrom/
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+var aFunction = __webpack_require__(/*! ./_a-function */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_a-function.js");
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var forOf = __webpack_require__(/*! ./_for-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_for-of.js");
+
+module.exports = function (COLLECTION) {
+  $export($export.S, COLLECTION, { from: function from(source /* , mapFn, thisArg */) {
+    var mapFn = arguments[1];
+    var mapping, A, n, cb;
+    aFunction(this);
+    mapping = mapFn !== undefined;
+    if (mapping) aFunction(mapFn);
+    if (source == undefined) return new this();
+    A = [];
+    if (mapping) {
+      n = 0;
+      cb = ctx(mapFn, arguments[2], 2);
+      forOf(source, false, function (nextItem) {
+        A.push(cb(nextItem, n++));
+      });
+    } else {
+      forOf(source, false, A.push, A);
+    }
+    return new this(A);
+  } });
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-of.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-of.js ***!
+  \***********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+// https://tc39.github.io/proposal-setmap-offrom/
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+
+module.exports = function (COLLECTION) {
+  $export($export.S, COLLECTION, { of: function of() {
+    var length = arguments.length;
+    var A = new Array(length);
+    while (length--) A[length] = arguments[length];
+    return new this(A);
+  } });
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-species.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-species.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var global = __webpack_require__(/*! ./_global */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_global.js");
+var core = __webpack_require__(/*! ./_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js");
+var dP = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js");
+var DESCRIPTORS = __webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js");
+var SPECIES = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('species');
+
+module.exports = function (KEY) {
+  var C = typeof core[KEY] == 'function' ? core[KEY] : global[KEY];
+  if (DESCRIPTORS && C && !C[SPECIES]) dP.f(C, SPECIES, {
+    configurable: true,
+    get: function () { return this; }
+  });
+};
 
 
 /***/ }),
@@ -3971,6 +4757,22 @@ module.exports = function (key) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js ***!
+  \*************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var isObject = __webpack_require__(/*! ./_is-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-object.js");
+module.exports = function (it, TYPE) {
+  if (!isObject(it) || it._t !== TYPE) throw TypeError('Incompatible receiver, ' + TYPE + ' required!');
+  return it;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks-define.js":
 /*!****************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks-define.js ***!
@@ -4108,6 +4910,37 @@ addToUnscopables('entries');
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.map.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.map.js ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var strong = __webpack_require__(/*! ./_collection-strong */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-strong.js");
+var validate = __webpack_require__(/*! ./_validate-collection */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_validate-collection.js");
+var MAP = 'Map';
+
+// 23.1 Map Objects
+module.exports = __webpack_require__(/*! ./_collection */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection.js")(MAP, function (get) {
+  return function Map() { return get(this, arguments.length > 0 ? arguments[0] : undefined); };
+}, {
+  // 23.1.3.6 Map.prototype.get(key)
+  get: function get(key) {
+    var entry = strong.getEntry(validate(this, MAP), key);
+    return entry && entry.v;
+  },
+  // 23.1.3.9 Map.prototype.set(key, value)
+  set: function set(key, value) {
+    return strong.def(validate(this, MAP), key === 0 ? 0 : key, value);
+  }
+}, strong, true);
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.number.is-integer.js":
 /*!**************************************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.number.is-integer.js ***!
@@ -4133,6 +4966,20 @@ $export($export.S, 'Number', { isInteger: __webpack_require__(/*! ./_is-integer 
 var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
 // 19.1.2.3 / 15.2.3.7 Object.defineProperties(O, Properties)
 $export($export.S + $export.F * !__webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js"), 'Object', { defineProperties: __webpack_require__(/*! ./_object-dps */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dps.js") });
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.object.define-property.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.object.define-property.js ***!
+  \*******************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+// 19.1.2.4 / 15.2.3.6 Object.defineProperty(O, P, Attributes)
+$export($export.S + $export.F * !__webpack_require__(/*! ./_descriptors */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_descriptors.js"), 'Object', { defineProperty: __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js").f });
 
 
 /***/ }),
@@ -4468,6 +5315,47 @@ setToStringTag($Symbol, 'Symbol');
 setToStringTag(Math, 'Math', true);
 // 24.3.3 JSON[@@toStringTag]
 setToStringTag(global.JSON, 'JSON', true);
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.from.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.from.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://tc39.github.io/proposal-setmap-offrom/#sec-map.from
+__webpack_require__(/*! ./_set-collection-from */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-from.js")('Map');
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.of.js":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.of.js ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://tc39.github.io/proposal-setmap-offrom/#sec-map.of
+__webpack_require__(/*! ./_set-collection-of */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_set-collection-of.js")('Map');
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.to-json.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es7.map.to-json.js ***!
+  \********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+// https://github.com/DavidBruant/Map-Set.prototype.toJSON
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+
+$export($export.P + $export.R, 'Map', { toJSON: __webpack_require__(/*! ./_collection-to-json */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_collection-to-json.js")('Map') });
 
 
 /***/ }),

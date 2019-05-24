@@ -175,7 +175,9 @@ var Graph = function (_Component) {
         _this.state = {
             mode: null,
             graphOnClick: null,
-            lastId: -1
+            lastId: -1,
+            lastNodeIdx: -1,
+            lastEdgeIdx: -1
         };
         _this.graphContainer = _react2.default.createRef();
         _this.toolbar = _react2.default.createRef();
@@ -313,6 +315,22 @@ var Graph = function (_Component) {
             _electron.ipcRenderer.on("save-success", function () {
                 _this2.toolbar.current.showMessage("File saved");
             });
+
+            _electron.ipcRenderer.on("execute-algorithm", function (sender, index) {
+                _this2.executeAlgorithm(index);
+            });
+
+            console.log(this);
+        }
+
+        // Execute graph algorithm by index
+
+    }, {
+        key: 'executeAlgorithm',
+        value: function executeAlgorithm(index) {
+            // Данные из графа брать:
+            // this.cy.nodes() - объекты нодов
+            // this.cy.edges() - объекты ребер
         }
     }, {
         key: 'resetMode',
@@ -364,17 +382,14 @@ var Graph = function (_Component) {
 
                 this.state.graphOnClick = function (event) {
                     if (state.mode === 'add-node' && event.target === cy) {
-                        var data = {
-                            id: ++state.lastId
-                        };
                         var label = labelInput.current.value;
-                        if (label) data.label = label;
+                        var id = ++state.lastId;
 
                         ur.do('add', {
                             group: 'nodes',
                             data: {
-                                id: ++state.lastId,
-                                label: labelInput.current.value,
+                                id: id,
+                                label: label,
                                 weight: undefined
                             },
                             position: event.position
@@ -407,8 +422,8 @@ var Graph = function (_Component) {
                 };
                 var edgeObj = function edgeObj() {
                     return {
-                        id: ++state.lastId,
                         data: {
+                            id: ++state.lastId,
                             weight: _weightInput.current.value || 1,
                             oriented: _checkboxIsArrow.current.checked
                         }
@@ -756,14 +771,37 @@ _electron.ipcRenderer.on("log", function (sender, msg) {
 var IncidenceMatrix = function (_Component) {
     (0, _inherits3.default)(IncidenceMatrix, _Component);
 
-    function IncidenceMatrix() {
+    function IncidenceMatrix(props) {
         (0, _classCallCheck3.default)(this, IncidenceMatrix);
-        return (0, _possibleConstructorReturn3.default)(this, (IncidenceMatrix.__proto__ || (0, _getPrototypeOf2.default)(IncidenceMatrix)).apply(this, arguments));
+
+        var _this = (0, _possibleConstructorReturn3.default)(this, (IncidenceMatrix.__proto__ || (0, _getPrototypeOf2.default)(IncidenceMatrix)).call(this, props));
+
+        _this.state = {
+            collection: {
+                nodes: [],
+                edges: []
+            }
+        };
+        return _this;
     }
 
     (0, _createClass3.default)(IncidenceMatrix, [{
+        key: 'setData',
+        value: function setData(collection) {
+            this.setState({ collection: collection });
+        }
+    }, {
         key: 'render',
         value: function render() {
+
+            var header = this.state.collection.nodes.map(function (node, index) {
+                return _react2.default.createElement(
+                    'th',
+                    { key: node.data.id },
+                    node.data.id
+                );
+            });
+
             return _react2.default.createElement(
                 'table',
                 { className: 'incidence-matrix' },
@@ -773,66 +811,7 @@ var IncidenceMatrix = function (_Component) {
                     _react2.default.createElement(
                         'tr',
                         null,
-                        _react2.default.createElement('th', { className: 'root-cell' }),
-                        _react2.default.createElement(
-                            'th',
-                            { 'data-node-id': '1' },
-                            '1'
-                        ),
-                        _react2.default.createElement(
-                            'th',
-                            { 'data-node-id': '1' },
-                            '2222222'
-                        ),
-                        _react2.default.createElement(
-                            'th',
-                            { 'data-node-id': '1' },
-                            '2222222'
-                        ),
-                        _react2.default.createElement(
-                            'th',
-                            { 'data-node-id': '1' },
-                            '2222222'
-                        ),
-                        _react2.default.createElement(
-                            'th',
-                            { 'data-node-id': '1' },
-                            '2222222'
-                        )
-                    ),
-                    _react2.default.createElement(
-                        'tr',
-                        null,
-                        _react2.default.createElement(
-                            'th',
-                            { 'data-node-id': '1' },
-                            '1'
-                        ),
-                        _react2.default.createElement(
-                            'td',
-                            { 'data-edge-id': '1' },
-                            'XXXX'
-                        ),
-                        _react2.default.createElement(
-                            'td',
-                            { 'data-edge-id': '1' },
-                            'X'
-                        ),
-                        _react2.default.createElement(
-                            'td',
-                            { 'data-edge-id': '1' },
-                            'X'
-                        ),
-                        _react2.default.createElement(
-                            'td',
-                            { 'data-edge-id': '1' },
-                            'X'
-                        ),
-                        _react2.default.createElement(
-                            'td',
-                            { 'data-edge-id': '1' },
-                            'X'
-                        )
+                        _react2.default.createElement('th', { className: 'root-cell' })
                     )
                 )
             );
@@ -844,9 +823,13 @@ var IncidenceMatrix = function (_Component) {
 var App = function (_Component2) {
     (0, _inherits3.default)(App, _Component2);
 
-    function App() {
+    function App(props) {
         (0, _classCallCheck3.default)(this, App);
-        return (0, _possibleConstructorReturn3.default)(this, (App.__proto__ || (0, _getPrototypeOf2.default)(App)).apply(this, arguments));
+
+        var _this2 = (0, _possibleConstructorReturn3.default)(this, (App.__proto__ || (0, _getPrototypeOf2.default)(App)).call(this, props));
+
+        _this2.adjacencyMatrix = _react2.default.createRef();
+        return _this2;
     }
 
     (0, _createClass3.default)(App, [{
@@ -857,14 +840,14 @@ var App = function (_Component2) {
                 { className: 'main-wrapper' },
                 _react2.default.createElement(
                     'header',
-                    { className: 'upper-header card-panel' },
+                    { className: 'upper-header card-panel', adjacencyMatrix: this.adjacencyMatrix },
                     'Interactive graph visualizer'
                 ),
                 _react2.default.createElement(_graph2.default, { className: 'content card-panel' }),
                 _react2.default.createElement(
                     'div',
                     { className: 'side-bar card-panel' },
-                    _react2.default.createElement(IncidenceMatrix, null),
+                    _react2.default.createElement(IncidenceMatrix, { ref: this.adjacencyMatrix }),
                     _react2.default.createElement(
                         'ul',
                         { className: 'hints' },
@@ -908,7 +891,7 @@ ReactDOM.render(_react2.default.createElement(App, null), document.getElementByI
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    label: data(id);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}");
 
 /***/ }),
 

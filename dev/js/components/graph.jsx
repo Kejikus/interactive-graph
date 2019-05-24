@@ -19,7 +19,9 @@ class Graph extends Component {
         this.state = {
             mode: null,
             graphOnClick: null,
-            lastId: -1
+            lastId: -1,
+            lastNodeIdx: -1,
+            lastEdgeIdx: -1
         };
         this.graphContainer = React.createRef();
         this.toolbar = React.createRef();
@@ -151,6 +153,19 @@ class Graph extends Component {
         ipcRenderer.on("save-success", () => {
             this.toolbar.current.showMessage("File saved");
         });
+
+        ipcRenderer.on("execute-algorithm", (sender, index) => {
+            this.executeAlgorithm(index);
+        });
+
+        console.log(this);
+    }
+
+    // Execute graph algorithm by index
+    executeAlgorithm(index) {
+        // Данные из графа брать:
+        // this.cy.nodes() - объекты нодов
+        // this.cy.edges() - объекты ребер
     }
 
     resetMode() {
@@ -195,18 +210,14 @@ class Graph extends Component {
 
             this.state.graphOnClick = function (event) {
                 if (state.mode === 'add-node' && event.target === cy) {
-                    let data = {
-                        id: ++state.lastId
-                    };
                     let label = labelInput.current.value;
-                    if (label)
-                        data.label = label;
+                    let id = ++state.lastId;
 
                     ur.do('add', {
                         group: 'nodes',
                         data: {
-                            id: ++state.lastId,
-                            label: labelInput.current.value,
+                            id: id,
+                            label: label,
                             weight: undefined
                         },
                         position: event.position
@@ -234,8 +245,8 @@ class Graph extends Component {
             };
             let edgeObj = () => {
                 return {
-                    id: ++state.lastId,
                     data: {
+                        id: ++state.lastId,
                         weight: weightInput.current.value || 1,
                         oriented: checkboxIsArrow.current.checked
                     }

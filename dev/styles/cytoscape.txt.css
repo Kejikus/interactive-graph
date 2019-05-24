@@ -1,3 +1,7 @@
+node {
+    label: data(id);
+}
+
 node.ghost {
     label: none;
     background-color: rgba(123, 123, 123, 0.3);

@@ -10,25 +10,35 @@ import Graph from './components/graph';
 ipcRenderer.on("log", (sender, msg) => console.log(msg));
 
 class IncidenceMatrix extends Component {
+
+    constructor(props) {
+        super(props);
+        this.state = {
+            collection: {
+                nodes: [],
+                edges: []
+            }
+        }
+    }
+
+
+    setData(collection) {
+        this.setState({collection: collection});
+    }
+
     render() {
+
+        const header = this.state.collection.nodes.map((node, index) => {
+            return (
+                <th key={ node.data.id }>{ node.data.id }</th>
+            );
+        });
+
         return (
             <table className="incidence-matrix">
                 <tbody>
                     <tr>
                         <th className="root-cell"></th>
-                        <th data-node-id="1">1</th>
-                        <th data-node-id="1">2222222</th>
-                        <th data-node-id="1">2222222</th>
-                        <th data-node-id="1">2222222</th>
-                        <th data-node-id="1">2222222</th>
-                    </tr>
-                    <tr>
-                        <th data-node-id="1">1</th>
-                        <td data-edge-id="1">XXXX</td>
-                        <td data-edge-id="1">X</td>
-                        <td data-edge-id="1">X</td>
-                        <td data-edge-id="1">X</td>
-                        <td data-edge-id="1">X</td>
                     </tr>
                 </tbody>
             </table>
@@ -38,15 +48,21 @@ class IncidenceMatrix extends Component {
 
 class App extends Component {
 
+    constructor(props) {
+        super(props);
+        this.adjacencyMatrix = React.createRef();
+    }
+
+
     render() {
         return (
             <div className="main-wrapper">
-                <header className="upper-header card-panel">
+                <header className="upper-header card-panel" adjacencyMatrix={this.adjacencyMatrix}>
                     Interactive graph visualizer
                 </header>
                 <Graph className="content card-panel"/>
                 <div className="side-bar card-panel">
-                    <IncidenceMatrix/>
+                    <IncidenceMatrix ref={this.adjacencyMatrix}/>
                     <ul className="hints">
                         <li>Ctrl+Z / Ctrl+Shift+Z - Undo/redo</li>
                         <li>Ctrl+D - Add node</li>

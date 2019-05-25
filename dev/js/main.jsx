@@ -6,7 +6,7 @@ import '../styles/index.sass';
 import "materialize-css";
 
 import Graph from './components/graph';
-import AdjacencyMatrix from './components/matrix';
+import SideBar from './components/sideBar';
 
 ipcRenderer.on("log", (sender, msg) => console.log(msg));
 
@@ -16,6 +16,7 @@ class App extends Component {
 		super(props);
 		this.adjacencyMatrix = React.createRef();
 		this.graph = React.createRef();
+		this.sideBar = React.createRef();
 	}
 
 	render() {
@@ -27,15 +28,8 @@ class App extends Component {
 				<header className="upper-header card-panel">
 					Interactive graph visualizer
 				</header>
-				<Graph className="content card-panel" ref={this.graph} adjacencyMatrix={this.adjacencyMatrix}/>
-				<div className="side-bar card-panel">
-					<AdjacencyMatrix ref={this.adjacencyMatrix} graph={this.graph}/>
-					<ul className="hints">
-						<li>Ctrl+Z / Ctrl+Shift+Z - Undo/redo</li>
-						<li>Ctrl+D - Add node</li>
-						<li>Ctrl+E - Add edge</li>
-					</ul>
-				</div>
+				<Graph className="content card-panel" ref={this.graph} sideBar={this.sideBar}/>
+				<SideBar ref={this.sideBar}/>
 			</div>
 		);
 	}

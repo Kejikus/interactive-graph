@@ -1,4 +1,4 @@
-import XRegExp from 'xregexp';
+import XRegExp from 'xregexp/lib';
 
 const r = String.raw;
 

@@ -1,15 +1,20 @@
 import {ipcRenderer} from 'electron';
 import React, { Component } from 'react';
+
 import cytoscape from 'cytoscape';
 import edgehandles from 'cytoscape-edgehandles';
 import undoRedo from 'cytoscape-undo-redo';
+
 import $ from 'jquery';
+
 import Toolbar from "./toolbar";
 import { InitAlgorithms } from '../stores/algorithms';
 
+import {messager, msgTypes} from "../rendererMessager";
+
 import graphCss from "../../styles/cytoscape.txt.css";
-import BestFirstSearch from "./Tasks/components/BestFirstSearch";
-import AlgorithmWrapper from "./Tasks/AlgorithmWrapper";
+// import BestFirstSearch from "./Tasks/components/BestFirstSearch";
+// import AlgorithmWrapper from "./Tasks/AlgorithmWrapper";
 
 cytoscape.use(edgehandles);
 undoRedo(cytoscape);
@@ -29,7 +34,6 @@ export default class Graph extends Component {
 		this.graphContainer = React.createRef();
 		this.toolbar = React.createRef();
 		// this.algorithm = React.createRef();
-		this.adjacencyMatrix = props.adjacencyMatrix || null;
 
 		$(document).on("keydown", (e) => {
 			if (e.ctrlKey) {
@@ -55,6 +59,10 @@ export default class Graph extends Component {
 		});
 
 		this.tasks = InitAlgorithms.create();
+
+		messager.on(msgTypes.graphSetAdjacency, (srcNodeId, tgtNodeId, valueTo, valueFrom) => {
+			return this.editAdjacency(srcNodeId, tgtNodeId, valueTo, valueFrom);
+		});
 	}
 
 	componentDidMount() {
@@ -108,12 +116,11 @@ export default class Graph extends Component {
 
 		// Adjacency matrix recalculation trigger
 		this.cy.on('add data move remove', () => {
-			if (this.adjacencyMatrix !== null) {
-				this.adjacencyMatrix.current.setCollection(
-					this.cy.nodes().unmerge('[^nodeIdx]').jsons(),
-					this.cy.edges().jsons()
-				);
-			}
+			messager.send(
+				msgTypes.matrixSetData,
+				this.cy.nodes().difference('[^nodeIdx]').jsons(),
+				this.cy.edges().jsons()
+			);
 		});
 
 		// const recalculateNodeWeight = node => {
@@ -266,9 +273,9 @@ export default class Graph extends Component {
 	}
 
 	// Algorithms components
-	Algorithms = [
-		BestFirstSearch,
-	];
+	// Algorithms = [
+	// 	BestFirstSearch,
+	// ];
 
 	// Execute graph algorithm by index
 	executeAlgorithm(index) {
@@ -488,8 +495,8 @@ export default class Graph extends Component {
 
 	render() {
 
-		const { currentTask } = this.state;
-		const Algorithm = currentTask !== -1 && this.Algorithms[currentTask];
+		// const { currentTask } = this.state;
+		// const Algorithm = currentTask !== -1 && this.Algorithms[currentTask];
 
 		return (
 			<div className={ this.props.className }>
@@ -501,9 +508,6 @@ export default class Graph extends Component {
 					         {value: "Add edge", onClick: () => this.onAddEdgeClick()},
 				         ]} />
 				<div className="graph-container" ref={this.graphContainer} />
-				<AlgorithmWrapper>
-					{currentTask !== -1 ? <Algorithm /> : <p>Content doesn't exist</p>}
-				</AlgorithmWrapper>
 			</div>
 		);
 	}

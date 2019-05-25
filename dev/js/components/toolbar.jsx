@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 
 import M from "materialize-css";
+import {messager, msgTypes} from "../rendererMessager";
 
 export default class Toolbar extends Component {
 
@@ -12,6 +13,8 @@ export default class Toolbar extends Component {
 			message: '',
 			setFocusRef: null
 		};
+
+		messager.on(msgTypes.toolbarSetMessage, (msg) => this.showMessage(msg));
 	}
 
 	componentDidUpdate(prevProps, prevState, snapshot) {

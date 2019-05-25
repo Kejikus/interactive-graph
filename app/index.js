@@ -347,6 +347,18 @@ function createWindow() {
         }]
     }]);
     _electron.Menu.setApplicationMenu(mainMenu);
+
+    win.on('close', function (e) {
+        var choice = _electron.dialog.showMessageBox(this, {
+            type: 'question',
+            buttons: ['Yes', 'No'],
+            title: 'Confirm',
+            message: 'Are you sure you want to quit?\nIf you have any unsaved data, it will be lost!'
+        });
+        if (choice === 1) {
+            e.preventDefault();
+        }
+    });
 }
 
 process.env.ELECTRON_ENABLE_LOGGING = true;

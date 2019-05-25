@@ -33,7 +33,7 @@ export default {
                 use: {
                     loader: 'babel-loader',
                     options: {
-                        presets: ['es2015', 'stage-0', 'react'],
+                        presets: ['latest', 'stage-0', 'react'],
                         plugins: ['transform-runtime']
                     }
                 },

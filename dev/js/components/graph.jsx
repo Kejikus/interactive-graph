@@ -21,11 +21,11 @@ export default class Graph extends Component {
 			graphOnClick: null,
 			lastId: -1,
 			lastNodeIdx: -1,
-			lastEdgeIdx: -1
+			addEdgeButton: false
 		};
 		this.graphContainer = React.createRef();
 		this.toolbar = React.createRef();
-		this.incidenceMatrix = props.incidenceMatrix || null;
+		this.adjacencyMatrix = props.adjacencyMatrix || null;
 		$(document).on("keydown", (e) => {
 			if (e.ctrlKey) {
 				if (e.which === 'D'.charCodeAt(0)) {
@@ -53,10 +53,12 @@ export default class Graph extends Component {
 	}
 
 	componentDidMount() {
+		// Init of cytoscape.js
 		this.cy = cytoscape({
 			container: this.graphContainer.current,
 			style: graphCss
 		});
+
 		// Concat two list of styles
 		let concatStyle = this.cy.style().json().concat([
 			{
@@ -77,6 +79,8 @@ export default class Graph extends Component {
 			}
 		]);
 		this.cy.style().fromJson(concatStyle);
+
+		// Style switches for selecting nodes
 		this.cy.on('select', 'node', event => {
 			let node = event.target;
 			node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).addClass('node-selected');
@@ -84,6 +88,27 @@ export default class Graph extends Component {
 		this.cy.on('unselect', 'node', event => {
 			let node = event.target;
 			node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).removeClass('node-selected');
+		});
+
+		this.cy.on('select unselect', '*', event => {
+			if (this.cy.$('edge:selected').length === 1 && this.cy.$(':selected').length === 1 && !this.state.addEdgeButton) {
+				this.toolbar.current.addButton('Edit edge', () => this.onEditEdgeClicked(), 'btn waves-effect waves-light');
+				this.state.addEdgeButton = true;
+			} else if ((this.cy.$('edge:selected').length !== 1 || this.cy.$(':selected').length !== 1) && this.state.addEdgeButton) {
+				this.toolbar.current.removeButton(-1);
+				if (this.state.mode === 'edit-edge') this.resetMode();
+				this.state.addEdgeButton = false;
+			}
+		});
+
+		// Adjacency matrix recalculation trigger
+		this.cy.on('add data move remove', () => {
+			if (this.adjacencyMatrix !== null) {
+				this.adjacencyMatrix.current.setCollection(
+					this.cy.nodes().unmerge('[^nodeIdx]').jsons(),
+					this.cy.edges().jsons()
+				);
+			}
 		});
 
 		// const recalculateNodeWeight = node => {
@@ -120,6 +145,20 @@ export default class Graph extends Component {
 			undoableDrag: true,
 			stackSizeLimit: 10
 		});
+
+		function changeData(obj) {
+			const oldValue = obj.elem.data()[obj.key];
+			obj.elem.data(obj.key, obj.value);
+			return {elem: obj.elem, key: obj.key, value: oldValue}
+		}
+
+		function unchangeData(obj) {
+			const oldValue = obj.elem.data()[obj.key];
+			obj.elem.data(obj.key, obj.value);
+			return {elem: obj.elem, key: obj.key, value: oldValue}
+		}
+
+		this.ur.action("changeData", changeData, unchangeData);
 
 		ipcRenderer.on("clear-graph", () => this.clear());
 		ipcRenderer.on("set-graph", (sender, obj) => {
@@ -164,6 +203,93 @@ export default class Graph extends Component {
 		console.log(this);
 	}
 
+	// Edit number of outgoing edges
+	// offset - desired number of outgoing edges - current number
+	editAdjacency(srcNodeId, tgtNodeId, offset) {
+		if (offset < 0) {
+			// Removing directed edges
+			let directedEdges = this.cy.$(`edge[source=${srcNodeId}][target=${tgtNodeId}][?oriented]`);
+			const offset1 = Math.min(directedEdges.length, -offset);
+
+			for (let i = 0; i < offset1; i++) directedEdges[i].remove();
+
+			offset += offset1;
+			if (offset === 0) return;
+
+			// If not enough, directing undirected edges
+			let undirectedEdges = this.cy.$(`edge[source=${tgtNodeId}][target=${srcNodeId}][!oriented]`);
+			const offset2 = Math.min(undirectedEdges.length, -offset);
+
+			for (let i = 0; i < offset2; i++) undirectedEdges[i].data('oriented', true);
+
+			offset += offset2;
+			if (offset === 0) return;
+
+			// Directing left edges
+			undirectedEdges = this.cy.$(`edge[source=${srcNodeId}][target=${tgtNodeId}][!oriented]`);
+			const offset3 = Math.min(undirectedEdges.length, -offset);
+
+			for (let i = 0; i < offset3; i++) {
+				undirectedEdges[i].data('source', tgtNodeId);
+				undirectedEdges[i].data('target', srcNodeId);
+				undirectedEdges[i].data('oriented', true);
+			}
+		} else if (offset > 0) {
+			// Undirecting existing edges
+			let directedEdges = this.cy.$(`edge[source="${tgtNodeId}"][target="${srcNodeId}"][?oriented]`);
+			const offset1 = Math.min(directedEdges.length, offset);
+
+			for (let i = 0; i < offset1; i++) directedEdges[i].data('oriented', false);
+
+			offset -= offset1;
+
+			// Loops are adding with another logic
+			if (srcNodeId === tgtNodeId) {
+				const offset2 = Math.floor(offset / 2);
+				for (let i = 0; i < offset2; i++) {
+					this.cy.add({
+						group: 'edges',
+						data: {
+							id: ++this.state.lastId,
+							source: srcNodeId,
+							target: tgtNodeId,
+							oriented: false,
+							weight: 1
+						}
+					});
+				}
+				offset -= offset2 * 2;
+				if (offset > 0) {
+					this.cy.add({
+						group: 'edges',
+						data: {
+							id: ++this.state.lastId,
+							source: srcNodeId,
+							target: tgtNodeId,
+							oriented: true,
+							weight: 1
+						}
+					});
+				}
+				return;
+			}
+
+			// Adding extra directed edges
+			for (let i = 0; i < offset; i++) {
+				this.cy.add({
+					group: 'edges',
+					data: {
+						id: ++this.state.lastId,
+						source: srcNodeId,
+						target: tgtNodeId,
+						oriented: true,
+						weight: 1
+					}
+				});
+			}
+		}
+	}
+
 	// Execute graph algorithm by index
 	executeAlgorithm(index) {
 		// Данные из графа брать:
@@ -196,6 +322,13 @@ export default class Graph extends Component {
 				this.state.mode = null;
 				break;
 			}
+			case 'edit-edge': {
+				this.toolbar.current.showMessage('');
+				this.toolbar.current.removeAllFields();
+				this.cy.resize();
+				this.state.mode = null;
+				break;
+			}
 		}
 	}
 
@@ -209,21 +342,21 @@ export default class Graph extends Component {
 			resetMode();
 			state.mode = 'add-node';
 
-			let labelInput = this.toolbar.current
-				.addField('text', 'node-label', '', 'Node label', true);
+			// let labelInput = this.toolbar.current
+			// 	.addField('text', 'node-label', '', 'Node label', true);
 
 			this.state.graphOnClick = function (event) {
 				if (state.mode === 'add-node' && event.target === cy) {
-					let label = labelInput.current.value;
+					// let label = labelInput.current.value;
 					let id = ++state.lastId;
 
 					ur.do('add', {
 						group: 'nodes',
 						data: {
 							id: id,
-							label: label,
-							weight: undefined
-						},
+							// label: label,
+							weight: undefined,
+							nodeIdx: ++state.lastNodeIdx},
 						position: event.position
 					});
 					resetMode();
@@ -252,7 +385,7 @@ export default class Graph extends Component {
 					data: {
 						id: ++state.lastId,
 						weight: weightInput.current.value || 1,
-						oriented: checkboxIsArrow.current.checked
+						oriented: checkboxIsArrow.current.checked,
 					}
 				}
 			};
@@ -269,8 +402,17 @@ export default class Graph extends Component {
 			state.mode = 'add-edge';
 
 			let weightInput = this.toolbar.current
-				.addField('number', 'edge-weight', '', 'Edge weight', true);
-			let checkboxIsArrow = this.toolbar.current.addField('checkbox', 'edge-is-arrow', 'Oriented');
+				.addField({
+					type: 'number',
+					name: 'edge-weight',
+					placeholder: 'Edge weight',
+					focus: true
+				});
+			let checkboxIsArrow = this.toolbar.current.addField({
+				type: 'checkbox',
+				name: 'edge-is-arrow',
+				label: 'Oriented'
+			});
 
 			// cytoscape-edgehandles options
 			// https://github.com/cytoscape/cytoscape.js-edgehandles#initialisation
@@ -286,9 +428,72 @@ export default class Graph extends Component {
 			} else {
 				Object.assign(this.eh.options, ehOptions); // Update existing options
 			}
-			console.log(this.eh);
 			this.eh.enable();
 			this.eh.enableDrawMode();
+		} else {
+			resetMode();
+		}
+	}
+
+	onEditEdgeClicked() {
+		let state = this.state;
+		let cy = this.cy;
+		let resetMode = () => this.resetMode();
+
+		if (state.mode !== 'edit-edge') {
+
+			let edge = cy.$(':selected')[0];
+
+			const onWeightChanged = (event) => {
+				this.ur.do("changeData", {
+					elem: edge,
+					key: 'weight',
+					value: parseInt(weightInput.current.value)
+				});
+			};
+
+			const flipDirection = (event) => {
+				this.ur.do("move", {
+					eles: edge,
+					location: {
+						source: edge.data().target,
+						target: edge.data().source
+					}
+				});
+			};
+
+			const toggleArrow = (event) => {
+				this.ur.do("changeData", {
+					elem: edge,
+					key: 'oriented',
+					value: checkboxIsArrow.current.checked
+				});
+			};
+
+			resetMode();
+			state.mode = 'edit-edge';
+
+			let weightInput = this.toolbar.current
+				.addField({
+					type: 'number',
+					name: 'edge-weight',
+					value: edge.data().weight,
+					focus: true,
+					onChange: onWeightChanged
+				});
+			let buttonFlip = this.toolbar.current.addField({
+				type: 'button',
+				name: 'flipper',
+				value: 'Flip direction',
+				onClick: flipDirection
+			});
+			let checkboxIsArrow = this.toolbar.current.addField({
+				type: 'checkbox',
+				name: 'edge-is-arrow',
+				label: 'Oriented',
+				checked: edge.data().oriented || false,
+				onChange: toggleArrow
+			});
 		} else {
 			resetMode();
 		}

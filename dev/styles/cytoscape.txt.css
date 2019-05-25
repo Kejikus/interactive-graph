@@ -1,5 +1,23 @@
 node {
-    label: data(id);
+    text-halign: center;
+    text-valign: center;
+    /*text-background-opacity: 1;*/
+    /*text-background-color: white;*/
+    /*text-background-shape: roundrectangle;*/
+    /*text-background-padding: 2px;*/
+    font-family: Consolas;
+    color: black;
+    background-fill: radial-gradient;
+    background-gradient-stop-colors: white white gray gray;
+    background-gradient-stop-positions: 0% 30% 50% 100%;
+}
+
+node:selected {
+    background-gradient-stop-colors: white white blue blue;
+}
+
+node[nodeIdx] {
+    label: data(nodeIdx);
 }
 
 node.ghost {
@@ -15,6 +33,18 @@ node.eh-handle {
 
 edge {
     curve-style: bezier;
+    text-background-opacity: 1;
+    text-background-color: white;
+    text-background-shape: roundrectangle;
+    text-rotation: autorotate;
+    text-background-padding: 1px;
+    text-halign: center;
+    text-valign: top;
+    font-family: Consolas;
+}
+
+edge:selected {
+    z-index: 1;
 }
 
 edge.node-selected {

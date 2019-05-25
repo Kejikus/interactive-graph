@@ -6,63 +6,28 @@ import '../styles/index.sass';
 import "materialize-css";
 
 import Graph from './components/graph';
+import AdjacencyMatrix from './components/matrix';
 
 ipcRenderer.on("log", (sender, msg) => console.log(msg));
-
-class IncidenceMatrix extends Component {
-
-	constructor(props) {
-		super(props);
-		this.state = {
-			collection: {
-				nodes: [],
-				edges: []
-			}
-		}
-	}
-
-
-	setData(collection) {
-		this.setState({collection: collection});
-	}
-
-	render() {
-
-		const header = this.state.collection.nodes.map((node, index) => {
-			return (
-				<th key={ node.data.id }>{ node.data.id }</th>
-			);
-		});
-
-		return (
-			<table className="incidence-matrix">
-				<tbody>
-				<tr>
-					<th className="root-cell" />
-				</tr>
-				</tbody>
-			</table>
-		);
-	}
-}
 
 class App extends Component {
 
 	constructor(props) {
 		super(props);
 		this.adjacencyMatrix = React.createRef();
+		this.graph = React.createRef();
 	}
 
 
 	render() {
 		return (
 			<div className="main-wrapper">
-				<header className="upper-header card-panel" adjacencyMatrix={this.adjacencyMatrix}>
+				<header className="upper-header card-panel">
 					Interactive graph visualizer
 				</header>
-				<Graph className="content card-panel"/>
+				<Graph className="content card-panel" ref={this.graph} adjacencyMatrix={this.adjacencyMatrix}/>
 				<div className="side-bar card-panel">
-					<IncidenceMatrix ref={this.adjacencyMatrix}/>
+					<AdjacencyMatrix ref={this.adjacencyMatrix} graph={this.graph}/>
 					<ul className="hints">
 						<li>Ctrl+Z / Ctrl+Shift+Z - Undo/redo</li>
 						<li>Ctrl+D - Add node</li>
@@ -78,7 +43,3 @@ ReactDOM.render(
 	<App/>,
 	document.getElementById('root')
 );
-
-// $(document).ready(() => {
-//     $('.modal').modal();
-// });

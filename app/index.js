@@ -144,187 +144,187 @@ var _algorithms = __webpack_require__(/*! ./stores/algorithms */ "./dev/js/store
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function ipcSend(msgType, obj) {
-	win.webContents.send(msgType, obj);
+    win.webContents.send(msgType, obj);
 }
 
 function clearGraph() {
-	ipcSend("clear-graph", {});
+    ipcSend("clear-graph", {});
 }
 
 function openFile() {
-	_electron.dialog.showOpenDialog({
-		title: "Select graph file",
-		properties: ["openFile"],
-		filters: [{ name: "All formats", extensions: ["evf", "imgd", "amgd"] }, { name: "Edges/Vertices format", extensions: ["evf"] }, { name: "Incidence matrix", extensions: ["imgd"] }, { name: "Adjacency matrix", extensions: ["amgd"] }]
-	}, function (filePaths) {
-		console.log(filePaths);
-		if (filePaths === undefined) {
-			console.log("Nothing selected");
-			return;
-		}
+    _electron.dialog.showOpenDialog({
+        title: "Select graph file",
+        properties: ["openFile"],
+        filters: [{ name: "All formats", extensions: ["evf", "imgd", "amgd"] }, { name: "Edges/Vertices format", extensions: ["evf"] }, { name: "Incidence matrix", extensions: ["imgd"] }, { name: "Adjacency matrix", extensions: ["amgd"] }]
+    }, function (filePaths) {
+        console.log(filePaths);
+        if (filePaths === undefined) {
+            console.log("Nothing selected");
+            return;
+        }
 
-		var filename = filePaths[0];
-		var decodeFunc = null;
+        var filename = filePaths[0];
+        var decodeFunc = null;
 
-		if (_path2.default.extname(filename) === '.evf') decodeFunc = _saveFileTools.evfDecode;else if (_path2.default.extname(filename) === '.imgd') decodeFunc = _saveFileTools.imgdDecode;else if (_path2.default.extname(filename) === '.amgd') decodeFunc = _saveFileTools.amgdDecode;
+        if (_path2.default.extname(filename) === '.evf') decodeFunc = _saveFileTools.evfDecode;else if (_path2.default.extname(filename) === '.imgd') decodeFunc = _saveFileTools.imgdDecode;else if (_path2.default.extname(filename) === '.amgd') decodeFunc = _saveFileTools.amgdDecode;
 
-		if (decodeFunc !== null) {
-			_fs2.default.readFile(filename, 'utf8', function (err, data) {
-				var graphData = decodeFunc(data);
-				console.log(graphData);
-				ipcSend("set-graph", graphData);
-			});
-		}
-	});
+        if (decodeFunc !== null) {
+            _fs2.default.readFile(filename, 'utf8', function (err, data) {
+                var graphData = decodeFunc(data);
+                console.log(graphData);
+                ipcSend("set-graph", graphData);
+            });
+        }
+    });
 }
 
 function saveAsIncidenceMatrix() {
-	_electron.dialog.showSaveDialog({
-		title: "Save as incidence matrix",
-		filters: [{ name: "Incidence matrix", extensions: ["imgd"] }, { name: "All files", extensions: ["*"] }]
-	}, function (filename) {
-		if (filename === undefined) return;
+    _electron.dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+        filters: [{ name: "Incidence matrix", extensions: ["imgd"] }, { name: "All files", extensions: ["*"] }]
+    }, function (filename) {
+        if (filename === undefined) return;
 
-		ipcSend("request-save-collection", null);
-		_electron.ipcMain.once("send-save-collection", function (sender, obj) {
-			var fileObj = (0, _saveFileTools.imgdEncode)(obj);
-			if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
-				if (err) return ipcSend("save-error", err);
-				ipcSend("save-success", null);
-			});else ipcSend("save-error", 'Error saving in .imgd format');
-		});
-	});
+        ipcSend("request-save-collection", null);
+        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
+            var fileObj = (0, _saveFileTools.imgdEncode)(obj);
+            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+                if (err) return ipcSend("save-error", err);
+                ipcSend("save-success", null);
+            });else ipcSend("save-error", 'Error saving in .imgd format');
+        });
+    });
 }
 
 function saveAsAdjacencyMatrix() {
-	_electron.dialog.showSaveDialog({
-		title: "Save as incidence matrix",
-		filters: [{ name: "Adjacency matrix", extensions: ["amgd"] }, { name: "All files", extensions: ["*"] }]
-	}, function (filename) {
-		if (filename === undefined) return;
+    _electron.dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+        filters: [{ name: "Adjacency matrix", extensions: ["amgd"] }, { name: "All files", extensions: ["*"] }]
+    }, function (filename) {
+        if (filename === undefined) return;
 
-		ipcSend("request-save-collection", null);
-		_electron.ipcMain.once("send-save-collection", function (sender, obj) {
-			var fileObj = (0, _saveFileTools.amgdEncode)(obj);
-			if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
-				if (err) return ipcSend("save-error", err);
-				ipcSend("save-success", null);
-			});else ipcSend("save-error", 'Error saving in .imgd format');
-		});
-	});
+        ipcSend("request-save-collection", null);
+        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
+            var fileObj = (0, _saveFileTools.amgdEncode)(obj);
+            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+                if (err) return ipcSend("save-error", err);
+                ipcSend("save-success", null);
+            });else ipcSend("save-error", 'Error saving in .imgd format');
+        });
+    });
 }
 
 function saveAsEdgesVertices() {
-	_electron.dialog.showSaveDialog({
-		title: "Save as incidence matrix",
-		filters: [{ name: "Edges/Vertices format", extensions: ["evf"] }, { name: "All files", extensions: ["*"] }]
-	}, function (filename) {
-		if (filename === undefined) return;
+    _electron.dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+        filters: [{ name: "Edges/Vertices format", extensions: ["evf"] }, { name: "All files", extensions: ["*"] }]
+    }, function (filename) {
+        if (filename === undefined) return;
 
-		ipcSend("request-save-collection", null);
-		_electron.ipcMain.once("send-save-collection", function (sender, obj) {
-			var fileObj = (0, _saveFileTools.evfEncode)(obj);
-			if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
-				if (err) return ipcSend("save-error", err);
-				ipcSend("save-success", null);
-			});else ipcSend("save-error", 'Error saving in .evf format');
-		});
-	});
+        ipcSend("request-save-collection", null);
+        _electron.ipcMain.once("send-save-collection", function (sender, obj) {
+            var fileObj = (0, _saveFileTools.evfEncode)(obj);
+            if (!fileObj.error) _fs2.default.writeFile(filename, fileObj.content, function (err) {
+                if (err) return ipcSend("save-error", err);
+                ipcSend("save-success", null);
+            });else ipcSend("save-error", 'Error saving in .evf format');
+        });
+    });
 }
 
 // Display dialog box with instructions how to use this program
 function displayHelp() {
-	_electron.dialog.showMessageBox({
-		type: "none",
-		buttons: ["Close"],
-		title: "How to use this application",
-		message: _help2.default
-	}, function () {});
+    _electron.dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: "How to use this application",
+        message: _help2.default
+    }, function () {});
 }
 
 // Display dialog box with info about authors
 function displayAuthors() {
-	_electron.dialog.showMessageBox({
-		type: "none",
-		buttons: ["Close"],
-		title: "Authors",
-		message: _authors2.default
-	}, function () {});
+    _electron.dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: "Authors",
+        message: _authors2.default
+    }, function () {});
 }
 
 var win = void 0;
 function createWindow() {
-	win = new _electron.BrowserWindow({
-		width: 1000,
-		height: 700,
-		minWidth: 1000,
-		webPreferences: {
-			nodeIntegration: true
-		}
-	});
-	win.loadFile('app/index.html');
-	var mainMenu = new _electron.Menu.buildFromTemplate([{
-		label: "File",
-		type: "submenu",
-		submenu: [{
-			label: 'Dev Tools',
-			submenu: [{
-				label: "Show dev toolbar",
-				role: "toggledevtools"
-			}, {
-				label: "Reload",
-				role: "forcereload"
-			}]
-		}, {
-			label: "New graph",
-			accelerator: "CommandOrControl+N",
-			click: clearGraph
-		}, {
-			label: "Open...",
-			accelerator: "CommandOrControl+O",
-			click: openFile
-		}, {
-			label: "Save as",
-			type: "submenu",
-			submenu: [{
-				label: "Incidence matrix",
-				click: saveAsIncidenceMatrix
-			}, {
-				label: "Adjacency matrix",
-				click: saveAsAdjacencyMatrix
-			}, {
-				label: "Edges/Vertices format",
-				accelerator: "CommandOrControl+S",
-				click: saveAsEdgesVertices
-			}]
-		}, {
-			label: "Exit",
-			click: function click() {
-				return _electron.app.quit();
-			}
-		}]
-	}, {
-		label: "Theory of graph tasks",
-		type: "submenu",
-		submenu: [{
-			label: 'Task 1',
-			click: function click() {
-				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Task1);
-			}
-		}]
-	}, {
-		label: "About",
-		type: "submenu",
-		submenu: [{
-			label: "Help",
-			accelerator: "F1",
-			click: displayHelp
-		}, {
-			label: "Authors",
-			click: displayAuthors
-		}]
-	}]);
-	_electron.Menu.setApplicationMenu(mainMenu);
+    win = new _electron.BrowserWindow({
+        width: 1000,
+        height: 700,
+        minWidth: 1000,
+        webPreferences: {
+            nodeIntegration: true
+        }
+    });
+    win.loadFile('app/index.html');
+    var mainMenu = new _electron.Menu.buildFromTemplate([{
+        label: "File",
+        type: "submenu",
+        submenu: [{
+            label: 'Dev Tools',
+            submenu: [{
+                label: "Show dev toolbar",
+                role: "toggledevtools"
+            }, {
+                label: "Reload",
+                role: "forcereload"
+            }]
+        }, {
+            label: "New graph",
+            accelerator: "CommandOrControl+N",
+            click: clearGraph
+        }, {
+            label: "Open...",
+            accelerator: "CommandOrControl+O",
+            click: openFile
+        }, {
+            label: "Save as",
+            type: "submenu",
+            submenu: [{
+                label: "Incidence matrix",
+                click: saveAsIncidenceMatrix
+            }, {
+                label: "Adjacency matrix",
+                click: saveAsAdjacencyMatrix
+            }, {
+                label: "Edges/Vertices format",
+                accelerator: "CommandOrControl+S",
+                click: saveAsEdgesVertices
+            }]
+        }, {
+            label: "Exit",
+            click: function click() {
+                return _electron.app.quit();
+            }
+        }]
+    }, {
+        label: "Theory of graph tasks",
+        type: "submenu",
+        submenu: [{
+            label: 'Task 1',
+            click: function click() {
+                return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Task1);
+            }
+        }]
+    }, {
+        label: "About",
+        type: "submenu",
+        submenu: [{
+            label: "Help",
+            accelerator: "F1",
+            click: displayHelp
+        }, {
+            label: "Authors",
+            click: displayAuthors
+        }]
+    }]);
+    _electron.Menu.setApplicationMenu(mainMenu);
 }
 
 process.env.ELECTRON_ENABLE_LOGGING = true;
@@ -332,7 +332,7 @@ process.env.ELECTRON_ENABLE_LOGGING = true;
 _electron.app.on('ready', createWindow);
 
 _electron.app.on('window-all-closed', function () {
-	_electron.app.quit();
+    _electron.app.quit();
 });
 
 /***/ }),

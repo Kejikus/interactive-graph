@@ -50,25 +50,61 @@ body
 
 .side-bar
   padding: 0.3rem
+  overflow: hidden
 
-.incidence-matrix
+.adjacency-matrix
+  overflow: auto
+  max-height: 80%
+
+  col.first-col
+    width: 4em
+    text-align: center
 
   tr
     border: none
 
   th, td
     text-align: center
-    padding: 0.5rem
+    padding: 0.2rem
+    border-left: 1px solid grey
+    border-right: 1px solid grey
+    border-radius: 0
+    min-width: 1.5em
 
-    &:nth-child(2n)
-      background-color: $highlight-color
+    &:first-child
+      border-left: none
+
+    &:last-child
+      border-right: none
+
+  td.editing
+    background: $accent-color2
+
+    input
+      min-width: 2em
+      margin: 0
+      height: unset
+      border: none
+
+  th
+    background-color: $highlight-color
+    padding: 0.2rem 0.5rem
+
+  thead th
+    position: sticky
+    top: 0
+
+  tbody th, thead th:first-child
+    position: sticky
+    left: 0
 
   .root-cell
     position: relative
-    background: linear-gradient(to top right, transparent 0, transparent 48%, black 50%, transparent 52%)
+    background-image: linear-gradient(to top right, transparent 0, transparent 48%, black 50%, transparent 52%)
+    z-index: 1
 
-  tr:not(:first-child) th
-    text-align: right
+    &:only-child
+      display: none
 
 .graph-toolbar
   padding: 0.5rem

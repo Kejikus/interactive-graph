@@ -22,20 +22,28 @@ export default class Toolbar extends Component {
 		}
 	}
 
-	addField(type, name, label = '', placeholder = '', focus = false) {
+	addField(options) {
 		let ref = React.createRef();
-		this.state.fields.push({
-			type: type,
-			name: name,
-			label: label,
-			placeholder: placeholder,
-			ref: ref
-		});
-		if (focus) {
-			this.state.setFocusRef = ref;
+		const defaults = {
+			name: '',
+			label: '',
+			type: 'text',
+			placeholder: '',
+			ref: ref,
+			value: '',
+			checked: false,
+			onClick: () => undefined,
+			onChange: () => undefined,
+			focus: false
+		};
+		let resOptions = {};
+		Object.assign(resOptions, defaults, options);
+		this.state.fields.push(resOptions);
+		if (resOptions.focus) {
+			this.state.setFocusRef = resOptions.ref;
 		}
 		this.forceUpdate();
-		return ref;
+		return resOptions.ref;
 	}
 
 	removeField(i) {
@@ -61,12 +69,17 @@ export default class Toolbar extends Component {
 	}
 
 	removeButton(i) {
-		this.buttons = this.state.buttons.filter((_, index) => index !== i);
+		if (i >= 0)
+			this.state.buttons = this.state.buttons.filter((_, index) => index !== i);
+		else {
+			const length = this.state.buttons.length;
+			this.state.buttons = this.state.buttons.filter((_, index) => index !== length + i);
+		}
 		this.forceUpdate();
 	}
 
 	removeAllButtons() {
-		this.buttons = [];
+		this.state.buttons = [];
 		this.forceUpdate();
 	}
 
@@ -93,9 +106,16 @@ export default class Toolbar extends Component {
 					<label key={index}>
 						<input ref={field.ref}
 						       type={field.type}
-						       name={field.name}/>
+						       name={field.name}
+						       onChange={field.onChange}
+						       defaultChecked={field.checked}/>
 						<span>{field.label}</span>
 					</label>
+				);
+			} else if (field.type === 'button') {
+				return (
+					<input key={index} className="btn waves-effect waves-light" type="button"
+					       value={field.value} name={field.name} ref={field.ref} onClick={field.onClick}/>
 				);
 			} else {
 				return (
@@ -103,7 +123,9 @@ export default class Toolbar extends Component {
 						<input ref={field.ref}
 						       type={field.type}
 						       name={field.name}
-						       placeholder={field.placeholder}/>
+						       placeholder={field.placeholder}
+						       defaultValue={field.value}
+						       onChange={field.onChange}/>
 						<label>{field.label}</label>
 					</div>
 				);

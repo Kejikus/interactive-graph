@@ -210,86 +210,50 @@ export default class Graph extends Component {
 	}
 
 	// Edit number of outgoing edges
-	// offset - desired number of outgoing edges - current number
-	editAdjacency(srcNodeId, tgtNodeId, offset) {
-		if (offset < 0) {
-			// Removing directed edges
-			let directedEdges = this.cy.$(`edge[source=${srcNodeId}][target=${tgtNodeId}][?oriented]`);
-			const offset1 = Math.min(directedEdges.length, -offset);
+	// valueTo - desired total weight of outgoing edge from src to tgt
+	// valueFrom - desired total weight of outgoing edge from tgt to src
+	editAdjacency(srcNodeId, tgtNodeId, valueTo, valueFrom) {
+		valueTo = Number(valueTo);
+		valueFrom = Number(valueFrom);
+		// Removing all existing edges
+		let edges = this.cy
+			.$(`edge[source="${srcNodeId}"][target="${tgtNodeId}"]`)
+			.merge(`edge[source="${tgtNodeId}"][target="${srcNodeId}"]`).remove();
+		console.log(edges);
 
-			for (let i = 0; i < offset1; i++) directedEdges[i].remove();
-
-			offset += offset1;
-			if (offset === 0) return;
-
-			// If not enough, directing undirected edges
-			let undirectedEdges = this.cy.$(`edge[source=${tgtNodeId}][target=${srcNodeId}][!oriented]`);
-			const offset2 = Math.min(undirectedEdges.length, -offset);
-
-			for (let i = 0; i < offset2; i++) undirectedEdges[i].data('oriented', true);
-
-			offset += offset2;
-			if (offset === 0) return;
-
-			// Directing left edges
-			undirectedEdges = this.cy.$(`edge[source=${srcNodeId}][target=${tgtNodeId}][!oriented]`);
-			const offset3 = Math.min(undirectedEdges.length, -offset);
-
-			for (let i = 0; i < offset3; i++) {
-				undirectedEdges[i].data('source', tgtNodeId);
-				undirectedEdges[i].data('target', srcNodeId);
-				undirectedEdges[i].data('oriented', true);
-			}
-		} else if (offset > 0) {
-			// Undirecting existing edges
-			let directedEdges = this.cy.$(`edge[source="${tgtNodeId}"][target="${srcNodeId}"][?oriented]`);
-			const offset1 = Math.min(directedEdges.length, offset);
-
-			for (let i = 0; i < offset1; i++) directedEdges[i].data('oriented', false);
-
-			offset -= offset1;
-
-			// Loops are adding with another logic
-			if (srcNodeId === tgtNodeId) {
-				const offset2 = Math.floor(offset / 2);
-				for (let i = 0; i < offset2; i++) {
-					this.cy.add({
-						group: 'edges',
-						data: {
-							id: ++this.state.lastId,
-							source: srcNodeId,
-							target: tgtNodeId,
-							oriented: false,
-							weight: 1
-						}
-					});
+		if (valueTo === valueFrom && valueTo > 0) {
+			this.cy.add({
+				group: 'edges',
+				data: {
+					id: ++this.state.lastId,
+					source: srcNodeId,
+					target: tgtNodeId,
+					weight: valueTo,
+					oriented: false
 				}
-				offset -= offset2 * 2;
-				if (offset > 0) {
-					this.cy.add({
-						group: 'edges',
-						data: {
-							id: ++this.state.lastId,
-							source: srcNodeId,
-							target: tgtNodeId,
-							oriented: true,
-							weight: 1
-						}
-					});
-				}
-				return;
-			}
-
-			// Adding extra directed edges
-			for (let i = 0; i < offset; i++) {
+			});
+		} else {
+			if (valueTo > 0) {
 				this.cy.add({
 					group: 'edges',
 					data: {
 						id: ++this.state.lastId,
 						source: srcNodeId,
 						target: tgtNodeId,
-						oriented: true,
-						weight: 1
+						weight: valueTo,
+						oriented: true
+					}
+				});
+			}
+			if (valueFrom > 0) {
+				this.cy.add({
+					group: 'edges',
+					data: {
+						id: ++this.state.lastId,
+						source: tgtNodeId,
+						target: srcNodeId,
+						weight: valueFrom,
+						oriented: true
 					}
 				});
 			}
@@ -371,7 +335,7 @@ export default class Graph extends Component {
 			this.toolbar.current.showMessage('Click on the free space to add node there');
 			this.cy.on('tap', this.state.graphOnClick);
 		} else {
-			// resetMode();
+			resetMode();
 		}
 	}
 
@@ -390,7 +354,7 @@ export default class Graph extends Component {
 				return {
 					data: {
 						id: ++state.lastId,
-						weight: weightInput.current.value || 1,
+						weight: parseInt(weightInput.current.value) || 1,
 						oriented: checkboxIsArrow.current.checked,
 					}
 				}
@@ -398,7 +362,7 @@ export default class Graph extends Component {
 			let ghostEdgeObj = () => {
 				return {
 					data: {
-						weight: weightInput.current.value || 1,
+						weight: parseInt(weightInput.current.value) || 1,
 						oriented: checkboxIsArrow.current.checked
 					}
 				}
@@ -412,7 +376,8 @@ export default class Graph extends Component {
 					type: 'number',
 					name: 'edge-weight',
 					placeholder: 'Edge weight',
-					focus: true
+					focus: true,
+					min: 0
 				});
 			let checkboxIsArrow = this.toolbar.current.addField({
 				type: 'checkbox',

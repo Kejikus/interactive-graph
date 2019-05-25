@@ -4,6 +4,7 @@ import path from 'path';
 
 import {amgdDecode, amgdEncode, evfDecode, evfEncode, imgdDecode, imgdEncode} from './saveFileTools';
 import helpTxt from '../text/help.txt';
+import fileInfoTxt from '../text/file_info.txt';
 import authorsTxt from '../text/authors.txt';
 
 import { TaskTypeEnum } from './const/enums';
@@ -42,7 +43,7 @@ function openFile() {
 
         if (decodeFunc !== null) {
             fs.readFile(filename, 'utf8', (err, data) => {
-                data = data.replace(/%.*\n/g);
+                data = data.replace(/%[^\n]*\n/gm, '\n');
                 let graphData = decodeFunc(data);
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
@@ -154,6 +155,15 @@ function displayHelp() {
     }, () => {});
 }
 
+function displayFileInfo() {
+    dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: "File format info",
+        message: fileInfoTxt
+    }, () => {});
+}
+
 // Display dialog box with info about authors
 function displayAuthors() {
     dialog.showMessageBox({
@@ -251,6 +261,10 @@ function createWindow() {
 					label: "Help",
 					accelerator: "F1",
 					click: displayHelp
+				},
+				{
+					label: "File format info",
+					click: displayFileInfo
 				},
 				{
 					label: "Authors",

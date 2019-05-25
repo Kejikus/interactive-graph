@@ -69,25 +69,25 @@ class AdjacencyMatrix extends Component {
 					if ((edgeSrcId ===  srcNodeId && edgeTgtId === tgtNodeId) ||
 						(edgeSrcId === tgtNodeId && edgeTgtId === srcNodeId && !edgeOriented))
 					{
-						if (srcNodeId === tgtNodeId && !edgeOriented) {
-							return count + 2
-						}
-						return count + 1;
+						return count + edge.data.weight;
 					}
 					return count;
 				}, 0);
 
 				if (this.state.editableCell.row === rowIdx && this.state.editableCell.col === colIdx) {
-					this.state.editableCell.value = edgesCount;
-
 					const inputHandler = (event) => {
 						if (event.which === 13) {
 							const newValue = this.state.editableCell.ref.current.value;
-							const oldValue = parseInt(this.state.editableCell.value);
+							const otherValue = this.state.editableCell.value;
 							this.graph.current.editAdjacency(
 								sourceNode.data.id,
 								targetNode.data.id,
-								newValue - oldValue);
+								newValue,
+								otherValue);
+							this.resetEditCell();
+							return false;
+						}
+						if (event.which === 27) {
 							this.resetEditCell();
 							return false;
 						}
@@ -96,6 +96,9 @@ class AdjacencyMatrix extends Component {
 					return (
 						<td className="editing" key={targetNode.data.id}><input ref={this.state.editableCell.ref} type="number" min="0" defaultValue={edgesCount} onKeyUp={inputHandler} autoFocus={true}/></td>
 					)
+				}
+				if (this.state.editableCell.row === colIdx && this.state.editableCell.col === rowIdx) {
+					this.state.editableCell.value = edgesCount;
 				}
 				return (
 					<td key={targetNode.data.id} onClick={() => this.editCell(rowIdx, colIdx)}>{edgesCount}</td>

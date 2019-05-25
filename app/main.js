@@ -373,89 +373,51 @@ var Graph = function (_Component) {
 		}
 
 		// Edit number of outgoing edges
-		// offset - desired number of outgoing edges - current number
+		// valueTo - desired total weight of outgoing edge from src to tgt
+		// valueFrom - desired total weight of outgoing edge from tgt to src
 
 	}, {
 		key: 'editAdjacency',
-		value: function editAdjacency(srcNodeId, tgtNodeId, offset) {
-			if (offset < 0) {
-				// Removing directed edges
-				var directedEdges = this.cy.$('edge[source=' + srcNodeId + '][target=' + tgtNodeId + '][?oriented]');
-				var offset1 = Math.min(directedEdges.length, -offset);
+		value: function editAdjacency(srcNodeId, tgtNodeId, valueTo, valueFrom) {
+			valueTo = Number(valueTo);
+			valueFrom = Number(valueFrom);
+			// Removing all existing edges
+			var edges = this.cy.$('edge[source="' + srcNodeId + '"][target="' + tgtNodeId + '"]').merge('edge[source="' + tgtNodeId + '"][target="' + srcNodeId + '"]').remove();
+			console.log(edges);
 
-				for (var i = 0; i < offset1; i++) {
-					directedEdges[i].remove();
-				}offset += offset1;
-				if (offset === 0) return;
-
-				// If not enough, directing undirected edges
-				var undirectedEdges = this.cy.$('edge[source=' + tgtNodeId + '][target=' + srcNodeId + '][!oriented]');
-				var offset2 = Math.min(undirectedEdges.length, -offset);
-
-				for (var _i = 0; _i < offset2; _i++) {
-					undirectedEdges[_i].data('oriented', true);
-				}offset += offset2;
-				if (offset === 0) return;
-
-				// Directing left edges
-				undirectedEdges = this.cy.$('edge[source=' + srcNodeId + '][target=' + tgtNodeId + '][!oriented]');
-				var offset3 = Math.min(undirectedEdges.length, -offset);
-
-				for (var _i2 = 0; _i2 < offset3; _i2++) {
-					undirectedEdges[_i2].data('source', tgtNodeId);
-					undirectedEdges[_i2].data('target', srcNodeId);
-					undirectedEdges[_i2].data('oriented', true);
-				}
-			} else if (offset > 0) {
-				// Undirecting existing edges
-				var _directedEdges = this.cy.$('edge[source="' + tgtNodeId + '"][target="' + srcNodeId + '"][?oriented]');
-				var _offset = Math.min(_directedEdges.length, offset);
-
-				for (var _i3 = 0; _i3 < _offset; _i3++) {
-					_directedEdges[_i3].data('oriented', false);
-				}offset -= _offset;
-
-				// Loops are adding with another logic
-				if (srcNodeId === tgtNodeId) {
-					var _offset2 = Math.floor(offset / 2);
-					for (var _i4 = 0; _i4 < _offset2; _i4++) {
-						this.cy.add({
-							group: 'edges',
-							data: {
-								id: ++this.state.lastId,
-								source: srcNodeId,
-								target: tgtNodeId,
-								oriented: false,
-								weight: 1
-							}
-						});
+			if (valueTo === valueFrom && valueTo > 0) {
+				this.cy.add({
+					group: 'edges',
+					data: {
+						id: ++this.state.lastId,
+						source: srcNodeId,
+						target: tgtNodeId,
+						weight: valueTo,
+						oriented: false
 					}
-					offset -= _offset2 * 2;
-					if (offset > 0) {
-						this.cy.add({
-							group: 'edges',
-							data: {
-								id: ++this.state.lastId,
-								source: srcNodeId,
-								target: tgtNodeId,
-								oriented: true,
-								weight: 1
-							}
-						});
-					}
-					return;
-				}
-
-				// Adding extra directed edges
-				for (var _i5 = 0; _i5 < offset; _i5++) {
+				});
+			} else {
+				if (valueTo > 0) {
 					this.cy.add({
 						group: 'edges',
 						data: {
 							id: ++this.state.lastId,
 							source: srcNodeId,
 							target: tgtNodeId,
-							oriented: true,
-							weight: 1
+							weight: valueTo,
+							oriented: true
+						}
+					});
+				}
+				if (valueFrom > 0) {
+					this.cy.add({
+						group: 'edges',
+						data: {
+							id: ++this.state.lastId,
+							source: tgtNodeId,
+							target: srcNodeId,
+							weight: valueFrom,
+							oriented: true
 						}
 					});
 				}
@@ -549,7 +511,7 @@ var Graph = function (_Component) {
 				this.toolbar.current.showMessage('Click on the free space to add node there');
 				this.cy.on('tap', this.state.graphOnClick);
 			} else {
-				// resetMode();
+				resetMode();
 			}
 		}
 	}, {
@@ -573,7 +535,7 @@ var Graph = function (_Component) {
 					return {
 						data: {
 							id: ++state.lastId,
-							weight: _weightInput.current.value || 1,
+							weight: parseInt(_weightInput.current.value) || 1,
 							oriented: _checkboxIsArrow.current.checked
 						}
 					};
@@ -581,7 +543,7 @@ var Graph = function (_Component) {
 				var ghostEdgeObj = function ghostEdgeObj() {
 					return {
 						data: {
-							weight: _weightInput.current.value || 1,
+							weight: parseInt(_weightInput.current.value) || 1,
 							oriented: _checkboxIsArrow.current.checked
 						}
 					};
@@ -594,7 +556,8 @@ var Graph = function (_Component) {
 					type: 'number',
 					name: 'edge-weight',
 					placeholder: 'Edge weight',
-					focus: true
+					focus: true,
+					min: 0
 				});
 				var _checkboxIsArrow = this.toolbar.current.addField({
 					type: 'checkbox',
@@ -849,22 +812,21 @@ var AdjacencyMatrix = function (_Component) {
 						var edgeOriented = edge.data.oriented || false;
 
 						if (edgeSrcId === srcNodeId && edgeTgtId === tgtNodeId || edgeSrcId === tgtNodeId && edgeTgtId === srcNodeId && !edgeOriented) {
-							if (srcNodeId === tgtNodeId && !edgeOriented) {
-								return count + 2;
-							}
-							return count + 1;
+							return count + edge.data.weight;
 						}
 						return count;
 					}, 0);
 
 					if (_this2.state.editableCell.row === rowIdx && _this2.state.editableCell.col === colIdx) {
-						_this2.state.editableCell.value = edgesCount;
-
 						var inputHandler = function inputHandler(event) {
 							if (event.which === 13) {
 								var newValue = _this2.state.editableCell.ref.current.value;
-								var oldValue = parseInt(_this2.state.editableCell.value);
-								_this2.graph.current.editAdjacency(sourceNode.data.id, targetNode.data.id, newValue - oldValue);
+								var otherValue = _this2.state.editableCell.value;
+								_this2.graph.current.editAdjacency(sourceNode.data.id, targetNode.data.id, newValue, otherValue);
+								_this2.resetEditCell();
+								return false;
+							}
+							if (event.which === 27) {
 								_this2.resetEditCell();
 								return false;
 							}
@@ -875,6 +837,9 @@ var AdjacencyMatrix = function (_Component) {
 							{ className: "editing", key: targetNode.data.id },
 							_react2.default.createElement("input", { ref: _this2.state.editableCell.ref, type: "number", min: "0", defaultValue: edgesCount, onKeyUp: inputHandler, autoFocus: true })
 						);
+					}
+					if (_this2.state.editableCell.row === colIdx && _this2.state.editableCell.col === rowIdx) {
+						_this2.state.editableCell.value = edgesCount;
 					}
 					return _react2.default.createElement(
 						"td",
@@ -1026,7 +991,8 @@ var Toolbar = function (_Component) {
 				onChange: function onChange() {
 					return undefined;
 				},
-				focus: false
+				focus: false,
+				min: undefined
 			};
 			var resOptions = {};
 			(0, _assign2.default)(resOptions, defaults, options);
@@ -1131,6 +1097,7 @@ var Toolbar = function (_Component) {
 							name: field.name,
 							placeholder: field.placeholder,
 							defaultValue: field.value,
+							min: field.min,
 							onChange: field.onChange }),
 						_react2.default.createElement(
 							'label',
@@ -1393,7 +1360,7 @@ var AlgorithmsStore = function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}");
 
 /***/ }),
 

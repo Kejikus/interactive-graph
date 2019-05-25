@@ -4,7 +4,7 @@ const r = String.raw;
 
 // Every read function:
 // - accepts only raw, cleaned from comments, string with file contents
-// - returns {edges: {}, nodes: {}, errors: [], lastId: int} object
+// - returns {edges: {}, nodes: {}, errors: [], lastId: int, lastNodeIdx: int} object
 // Every write function
 // - accepts a collection {nodes: [], edges: []} object
 // - returns {error: bool, content: str} object
@@ -27,7 +27,8 @@ export function evfDecode(data) {
 	let nodes = {};
 	let errors = [];
 	let usedIds = [];
-	let lastId = 0;
+	let lastId = -1;
+	let lastNodeIdx = -1;
 
 	if (verticesMatch) {
 		let verticesText = verticesMatch.content.replace(/\s/g, '');
@@ -44,7 +45,8 @@ export function evfDecode(data) {
 				nodes[id] = {
 					group: 'nodes',
 					data: {
-						id: id
+						id: id,
+						nodeIdx: ++lastNodeIdx
 					},
 					position: {
 						x: x,
@@ -90,6 +92,7 @@ export function evfDecode(data) {
 						group: 'nodes',
 						data: {
 							id: source,
+							nodeIdx: ++lastNodeIdx,
 							layout: true
 						},
 						position: {
@@ -105,6 +108,7 @@ export function evfDecode(data) {
 						group: 'nodes',
 						data: {
 							id: target,
+							nodeIdx: ++lastNodeIdx,
 							layout: true
 						},
 						position: {
@@ -149,7 +153,8 @@ export function evfDecode(data) {
 		errors: errors,
 		edges: edges,
 		nodes: nodes,
-		lastId: lastId
+		lastId: lastId,
+		lastNodeIdx: lastNodeIdx
 	};
 }
 
@@ -199,6 +204,7 @@ export function imgdDecode(data) {
 	let nodes = {};
 	let edges = {};
 	let lastId = -1;
+	let lastNodeIdx = -1;
 
 	// There are many points with return statements, so this would lessen the code
 	const retObj = () => {
@@ -252,6 +258,7 @@ export function imgdDecode(data) {
 			group: 'nodes',
 			data: {
 				id: ++lastId,
+				nodeIdx: ++lastNodeIdx,
 				layout: true
 			},
 			position: {
@@ -345,11 +352,13 @@ export function imgdEncode(collection) {
 export function amgdDecode(data) {
 	// amgd - Adjacency Matrix Graph Data
 	// Treated as JSON with condition that all JSON is a square array
+	console.log(data);
 
 	let errors = [];
 	let nodes = {};
 	let edges = {};
 	let lastId = -1;
+	let lastNodeIdx = -1;
 
 	// There are many points with return statements, so this would lessen the code
 	const retObj = () => {
@@ -357,7 +366,8 @@ export function amgdDecode(data) {
 			errors: errors,
 			nodes: nodes,
 			edges: edges,
-			lastId: lastId
+			lastId: lastId,
+			lastNodeIdx: lastNodeIdx
 		};
 	};
 
@@ -402,6 +412,7 @@ export function amgdDecode(data) {
 			group: 'nodes',
 			data: {
 				id: ++lastId,
+				nodeIdx: ++lastNodeIdx,
 				layout: true
 			},
 			position: {
@@ -412,81 +423,61 @@ export function amgdDecode(data) {
 	}
 	for (let i = 0; i < nodesCount; i++) {
 		for (let j = i; j < nodesCount; j++) {
-			let edgeCountSource = matrix[i][j];
-			let edgeCountTarget = matrix[j][i];
-			if (edgeCountSource !== 0 || edgeCountTarget !== 0) {
+			let edgeWeightSource = matrix[i][j];
+			let edgeWeightTarget = matrix[j][i];
+			if (edgeWeightSource !== 0 || edgeWeightTarget !== 0) {
 				if (i === j) { // Loop edges
-					while (edgeCountSource >= 2) {
-						let edgeId = ++lastId;
-						edges[edgeId] = {
-							group: 'edges',
-							data: {
-								id: edgeId,
-								weight: 1,
-								source: i,
-								target: j,
-								oriented: false
-							}
-						};
-						edgeCountSource -= 2;
-					}
-					if (edgeCountSource === 1) {
-						let edgeId = ++lastId;
-						edges[edgeId] = {
-							group: 'edges',
-							data: {
-								id: edgeId,
-								weight: 1,
-								source: i,
-								target: j,
-								oriented: true
-							}
-						};
-						edgeCountSource--;
-					}
+					let edgeId = ++lastId;
+					edges[edgeId] = {
+						group: 'edges',
+						data: {
+							id: edgeId,
+							weight: edgeWeightSource,
+							source: i,
+							target: j,
+							oriented: false
+						}
+					};
 				} else {
-					while (edgeCountSource > 0 && edgeCountTarget > 0) {
+					if (edgeWeightTarget !== edgeWeightSource) {
+						if (edgeWeightSource !== 0) {
+							let edgeId = ++lastId;
+							edges[edgeId] = {
+								group: 'edges',
+								data: {
+									id: edgeId,
+									weight: edgeWeightSource,
+									source: i,
+									target: j,
+									oriented: true
+								}
+							};
+						}
+						if (edgeWeightTarget !== 0) {
+							let edgeId = ++lastId;
+							edges[edgeId] = {
+								group: 'edges',
+								data: {
+									id: edgeId,
+									weight: edgeWeightTarget,
+									source: j,
+									target: i,
+									oriented: true
+								}
+							};
+						}
+					} else if (edgeWeightSource !== 0) {
 						let edgeId = ++lastId;
 						edges[edgeId] = {
 							group: 'edges',
 							data: {
 								id: edgeId,
-								weight: 1,
+								weight: edgeWeightSource,
 								source: i,
 								target: j,
 								oriented: false
 							}
 						};
-						edgeCountSource--;
-						edgeCountTarget--;
-					}
-					while (edgeCountSource > 0) {
-						let edgeId = ++lastId;
-						edges[edgeId] = {
-							group: 'edges',
-							data: {
-								id: edgeId,
-								weight: 1,
-								source: i,
-								target: j,
-								oriented: true
-							}
-						};
-						edgeCountSource--;
-					}
-					while (edgeCountTarget > 0) {
-						let edgeId = ++lastId;
-						edges[edgeId] = {
-							group: 'edges',
-							data: {
-								id: edgeId,
-								weight: 1,
-								source: j,
-								target: i,
-								oriented: true
-							}
-						};
-						edgeCountTarget--;
 					}
 				}
 			}
@@ -510,8 +501,8 @@ export function amgdEncode(collection) {
 		let targetIdx = nodesArr.findIndex(node => node.data.id === edgesArr[i].data.target);
 		let directed = edgesArr[i].data.oriented;
 
-		matrix[sourceIdx][targetIdx]++;
-		if (!directed) matrix[targetIdx][sourceIdx]++;
+		matrix[sourceIdx][targetIdx] += edgesArr[i].data.weight;
+		if (!directed) matrix[targetIdx][sourceIdx] += edgesArr[i].data.weight;
 	}
 
 	return {

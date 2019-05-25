@@ -34,7 +34,8 @@ export default class Toolbar extends Component {
 			checked: false,
 			onClick: () => undefined,
 			onChange: () => undefined,
-			focus: false
+			focus: false,
+			min: undefined
 		};
 		let resOptions = {};
 		Object.assign(resOptions, defaults, options);
@@ -125,6 +126,7 @@ export default class Toolbar extends Component {
 						       name={field.name}
 						       placeholder={field.placeholder}
 						       defaultValue={field.value}
+						       min={field.min}
 						       onChange={field.onChange}/>
 						<label>{field.label}</label>
 					</div>

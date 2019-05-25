@@ -133,6 +133,10 @@ var _help = __webpack_require__(/*! ../text/help.txt */ "./dev/text/help.txt");
 
 var _help2 = _interopRequireDefault(_help);
 
+var _file_info = __webpack_require__(/*! ../text/file_info.txt */ "./dev/text/file_info.txt");
+
+var _file_info2 = _interopRequireDefault(_file_info);
+
 var _authors = __webpack_require__(/*! ../text/authors.txt */ "./dev/text/authors.txt");
 
 var _authors2 = _interopRequireDefault(_authors);
@@ -168,7 +172,7 @@ function openFile() {
 
         if (decodeFunc !== null) {
             _fs2.default.readFile(filename, 'utf8', function (err, data) {
-                data = data.replace(/%.*\n/g);
+                data = data.replace(/%[^\n]*\n/gm, '\n');
                 var graphData = decodeFunc(data);
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
@@ -262,6 +266,15 @@ function displayHelp() {
     }, function () {});
 }
 
+function displayFileInfo() {
+    _electron.dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: "File format info",
+        message: _file_info2.default
+    }, function () {});
+}
+
 // Display dialog box with info about authors
 function displayAuthors() {
     _electron.dialog.showMessageBox({
@@ -343,6 +356,9 @@ function createWindow() {
             label: "Help",
             accelerator: "F1",
             click: displayHelp
+        }, {
+            label: "File format info",
+            click: displayFileInfo
         }, {
             label: "Authors",
             click: displayAuthors
@@ -433,7 +449,7 @@ var r = _raw2.default;
 
 // Every read function:
 // - accepts only raw, cleaned from comments, string with file contents
-// - returns {edges: {}, nodes: {}, errors: [], lastId: int} object
+// - returns {edges: {}, nodes: {}, errors: [], lastId: int, lastNodeIdx: int} object
 // Every write function
 // - accepts a collection {nodes: [], edges: []} object
 // - returns {error: bool, content: str} object
@@ -456,7 +472,8 @@ function evfDecode(data) {
 	var nodes = {};
 	var errors = [];
 	var usedIds = [];
-	var lastId = 0;
+	var lastId = -1;
+	var lastNodeIdx = -1;
 
 	if (verticesMatch) {
 		var verticesText = verticesMatch.content.replace(/\s/g, '');
@@ -473,7 +490,8 @@ function evfDecode(data) {
 				nodes[id] = {
 					group: 'nodes',
 					data: {
-						id: id
+						id: id,
+						nodeIdx: ++lastNodeIdx
 					},
 					position: {
 						x: x,
@@ -518,6 +536,7 @@ function evfDecode(data) {
 						group: 'nodes',
 						data: {
 							id: source,
+							nodeIdx: ++lastNodeIdx,
 							layout: true
 						},
 						position: {
@@ -533,6 +552,7 @@ function evfDecode(data) {
 						group: 'nodes',
 						data: {
 							id: target,
+							nodeIdx: ++lastNodeIdx,
 							layout: true
 						},
 						position: {
@@ -577,7 +597,8 @@ function evfDecode(data) {
 		errors: errors,
 		edges: edges,
 		nodes: nodes,
-		lastId: lastId
+		lastId: lastId,
+		lastNodeIdx: lastNodeIdx
 	};
 }
 
@@ -668,6 +689,7 @@ function imgdDecode(data) {
 	var nodes = {};
 	var edges = {};
 	var lastId = -1;
+	var lastNodeIdx = -1;
 
 	// There are many points with return statements, so this would lessen the code
 	var retObj = function retObj() {
@@ -721,6 +743,7 @@ function imgdDecode(data) {
 			group: 'nodes',
 			data: {
 				id: ++lastId,
+				nodeIdx: ++lastNodeIdx,
 				layout: true
 			},
 			position: {
@@ -824,11 +847,13 @@ function imgdEncode(collection) {
 function amgdDecode(data) {
 	// amgd - Adjacency Matrix Graph Data
 	// Treated as JSON with condition that all JSON is a square array
+	console.log(data);
 
 	var errors = [];
 	var nodes = {};
 	var edges = {};
 	var lastId = -1;
+	var lastNodeIdx = -1;
 
 	// There are many points with return statements, so this would lessen the code
 	var retObj = function retObj() {
@@ -836,7 +861,8 @@ function amgdDecode(data) {
 			errors: errors,
 			nodes: nodes,
 			edges: edges,
-			lastId: lastId
+			lastId: lastId,
+			lastNodeIdx: lastNodeIdx
 		};
 	};
 
@@ -881,6 +907,7 @@ function amgdDecode(data) {
 			group: 'nodes',
 			data: {
 				id: ++lastId,
+				nodeIdx: ++lastNodeIdx,
 				layout: true
 			},
 			position: {
@@ -891,82 +918,62 @@ function amgdDecode(data) {
 	}
 	for (var _i3 = 0; _i3 < nodesCount; _i3++) {
 		for (var j = _i3; j < nodesCount; j++) {
-			var edgeCountSource = matrix[_i3][j];
-			var edgeCountTarget = matrix[j][_i3];
-			if (edgeCountSource !== 0 || edgeCountTarget !== 0) {
+			var edgeWeightSource = matrix[_i3][j];
+			var edgeWeightTarget = matrix[j][_i3];
+			if (edgeWeightSource !== 0 || edgeWeightTarget !== 0) {
 				if (_i3 === j) {
 					// Loop edges
-					while (edgeCountSource >= 2) {
-						var edgeId = ++lastId;
-						edges[edgeId] = {
-							group: 'edges',
-							data: {
-								id: edgeId,
-								weight: 1,
-								source: _i3,
-								target: j,
-								oriented: false
-							}
-						};
-						edgeCountSource -= 2;
-					}
-					if (edgeCountSource === 1) {
-						var _edgeId = ++lastId;
-						edges[_edgeId] = {
-							group: 'edges',
-							data: {
-								id: _edgeId,
-								weight: 1,
-								source: _i3,
-								target: j,
-								oriented: true
-							}
-						};
-						edgeCountSource--;
-					}
+					var edgeId = ++lastId;
+					edges[edgeId] = {
+						group: 'edges',
+						data: {
+							id: edgeId,
+							weight: edgeWeightSource,
+							source: _i3,
+							target: j,
+							oriented: false
+						}
+					};
 				} else {
-					while (edgeCountSource > 0 && edgeCountTarget > 0) {
-						var _edgeId2 = ++lastId;
-						edges[_edgeId2] = {
-							group: 'edges',
-							data: {
-								id: _edgeId2,
-								weight: 1,
-								source: _i3,
-								target: j,
-								oriented: false
-							}
-						};
-						edgeCountSource--;
-						edgeCountTarget--;
-					}
-					while (edgeCountSource > 0) {
+					if (edgeWeightTarget !== edgeWeightSource) {
+						if (edgeWeightSource !== 0) {
+							var _edgeId = ++lastId;
+							edges[_edgeId] = {
+								group: 'edges',
+								data: {
+									id: _edgeId,
+									weight: edgeWeightSource,
+									source: _i3,
+									target: j,
+									oriented: true
+								}
+							};
+						}
+						if (edgeWeightTarget !== 0) {
+							var _edgeId2 = ++lastId;
+							edges[_edgeId2] = {
+								group: 'edges',
+								data: {
+									id: _edgeId2,
+									weight: edgeWeightTarget,
+									source: j,
+									target: _i3,
+									oriented: true
+								}
+							};
+						}
+					} else if (edgeWeightSource !== 0) {
 						var _edgeId3 = ++lastId;
 						edges[_edgeId3] = {
 							group: 'edges',
 							data: {
 								id: _edgeId3,
-								weight: 1,
+								weight: edgeWeightSource,
 								source: _i3,
 								target: j,
-								oriented: true
+								oriented: false
 							}
 						};
-						edgeCountSource--;
-					}
-					while (edgeCountTarget > 0) {
-						var _edgeId4 = ++lastId;
-						edges[_edgeId4] = {
-							group: 'edges',
-							data: {
-								id: _edgeId4,
-								weight: 1,
-								source: j,
-								target: _i3,
-								oriented: true
-							}
-						};
-						edgeCountTarget--;
 					}
 				}
 			}
@@ -996,8 +1003,8 @@ function amgdEncode(collection) {
 		});
 		var directed = edgesArr[_i4].data.oriented;
 
-		matrix[sourceIdx][targetIdx]++;
-		if (!directed) matrix[targetIdx][sourceIdx]++;
+		matrix[sourceIdx][targetIdx] += edgesArr[_i4].data.weight;
+		if (!directed) matrix[targetIdx][sourceIdx] += edgesArr[_i4].data.weight;
 	};
 
 	for (var _i4 = 0; _i4 < edgesCount; _i4++) {
@@ -1021,7 +1028,20 @@ function amgdEncode(collection) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("Все указанные здесь лица обучаются (или обучались) в Московском авиационном институте на факультете №8 «Информационные технологии и прикладная математика», кафедре 813 «Компьютерная математика»\n\nРазработчики:\n    Жовноватый К. 8-Т30-303Б-16\n    Волчунович А. 8-Т30-302Б-16 //пока не факт))\n\nАналитики:\n    Картанов А. 8-Т30-303Б-16\n    Гуслякова В. 8-Т30-303Б-16\n\nКоманда поддержки по мат.стату:\n    Погодин И. 8-Т30-302Б-16\n\nБатальон:\n    Чуваев П. 8-Т30-302Б-16\n    Болдаев М. 8-Т30-302Б-16\n    Палочкин И. 8-Т30-301Б-16\n    Павлов А. 8-Т30-303Б-16");
+/* harmony default export */ __webpack_exports__["default"] = ("Все указанные здесь лица обучаются (или обучались) в Московском авиационном институте на факультете №8 «Информационные технологии и прикладная математика», кафедре 813 «Компьютерная математика»\r\n\r\nРазработчики:\r\n    Жовноватый К. 8-Т3О-303Б-16\r\n    Волчунович А. 8-Т3О-302Б-16\r\n    Достойнов И.  8-Т3О-302Б-16\r\n\r\nАналитики:\r\n    Картанов А.  8-Т30-303Б-16\r\n    Гуслякова В. 8-Т30-303Б-16\r\n\r\nКоманда поддержки по мат.стату:\r\n    Погодин И.   8-Т30-302Б-16\r\n\r\nБатальон:\r\n    Чуваев П.    8-Т30-302Б-16\r\n    Болдаев М.   8-Т30-302Б-16\r\n    Палочкин И.  8-Т30-301Б-16\r\n    Павлов А.    8-Т30-303Б-16");
+
+/***/ }),
+
+/***/ "./dev/text/file_info.txt":
+/*!********************************!*\
+  !*** ./dev/text/file_info.txt ***!
+  \********************************/
+/*! exports provided: default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony default export */ __webpack_exports__["default"] = ("Описание типов данных:\r\n\r\n-- evf(Edges/Vertices Format)\r\nСодержит список рёбер вершин вида Edges{i(a, k, l, d), . . .}, где i — номер ребра, a — вес ребра, k и l — номера или имена вершин, d — может быть 1, если ребро направленное, и 0 в другом случае. \r\nИ содержит список вершин, который может быть задан с привязкой по координатам в следующем виде: Vertex{v(x, y)}, где v — имя или номер вершины, x и y — координаты в пикселях.\r\nЕсли список вершин не указан, то их координаты могут задаваться произвольно.\r\n\r\nПример оформления файла evf:\r\nEdges{\r\n    5(1, 1, 2, 0),\r\n    6(1, 2, 1, 0),\r\n    7(1, 3, 4, 1)\r\n}\r\nVertices{\r\n    3(0, 50),\r\n    4(50, 0)\r\n}\r\n\r\n-- imgd(Incidence Matrix Graph Data)\r\nТип данных, задающий граф в виде матрицы инцидентности, где строки – это вершины, а столбцы – ребра. Петли создаются как одна 1 в столбце, а ориентированная петля как одна -1 в столбце.\r\nПример оформления файла imgd:\r\n[\r\n    [1, 1, 0],\r\n    [1, 1, 0],\r\n    [0, 0, 1],\r\n    [0, 0, 1]\r\n]\r\n\r\n-- amgd(Adjacency Matrix Graph Data)\r\nТип данных, задающий граф в виде матрицы смежности.\r\nПример оформления файла amgd:\r\n[\r\n    [2, 2, 0, 0],\r\n    [2, 0, 0, 0],\r\n    [0, 0, 0, 1],\r\n    [0, 0, 1, 0]\r\n]");
 
 /***/ }),
 
@@ -1034,7 +1054,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\n\nВ меню находятся следующие пункты:\n    “File” – пункт меню, в котором реализованы следующие возможности:\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\n        “Open” (Ctrl + O) – открывает файл с графом.\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\n            Любой файл может содержать комментарии, начинающиеся со знака %.\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\n            Также есть возможность сохранить граф как картинку.\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\n        “Exit” – выход из программы.\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\n    “About” – пункт меню “О программе”\n        “Help” (F1) – описание программы и ее возможностей.\n        “Authors” – имена разработчиков и команды поддержки.\n\nМатематическое представление графа, содержит следующие возможности:\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\n\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\n        Так же можно задать ориентированность ребра, установив галочку.\n        По умолчанию ребро не ориентировано, а вес равен 1.\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\n\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\n** - описание типов, находится в приложении.");
+/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\r\n\r\nВ меню находятся следующие пункты:\r\n    “File” – пункт меню, в котором реализованы следующие возможности:\r\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\r\n        “Open” (Ctrl + O) – открывает файл с графом.\r\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\r\n            Любой файл может содержать комментарии, начинающиеся со знака %.\r\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\r\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\r\n            Также есть возможность сохранить граф как картинку.\r\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\r\n        “Exit” – выход из программы.\r\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\r\n    “About” – пункт меню “О программе”\r\n        “Help” (F1) – описание программы и ее возможностей.\r\n        “Authors” – имена разработчиков и команды поддержки.\r\n\r\nМатематическое представление графа, содержит следующие возможности:\r\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\r\n\r\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\r\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\r\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\r\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\r\n        Так же можно задать ориентированность ребра, установив галочку.\r\n        По умолчанию ребро не ориентировано, а вес равен 1.\r\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\r\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\r\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\r\n\r\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\r\n** - описание типов, находится в приложении.");
 
 /***/ }),
 

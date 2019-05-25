@@ -365,13 +365,13 @@ export default class Graph extends Component {
 							nodeIdx: ++state.lastNodeIdx},
 						position: event.position
 					});
-					resetMode();
+					// resetMode();
 				}
 			};
 			this.toolbar.current.showMessage('Click on the free space to add node there');
 			this.cy.on('tap', this.state.graphOnClick);
 		} else {
-			resetMode();
+			// resetMode();
 		}
 	}
 
@@ -384,7 +384,7 @@ export default class Graph extends Component {
 
 			let onEdgeAdded = (source, target, eles) => {
 				this.ur.do("add", eles);
-				resetMode();
+				// resetMode();
 			};
 			let edgeObj = () => {
 				return {

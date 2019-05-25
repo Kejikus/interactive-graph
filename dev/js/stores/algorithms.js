@@ -13,6 +13,7 @@ export class InitAlgorithms {
 }
 
 class AlgorithmsStore {
+	
 
 	task1() {
 		console.log('1');

@@ -101,8 +101,8 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 var TaskTypeEnum = exports.TaskTypeEnum = {
-	Task1: 'task1',
-	Task2: 'task2'
+	Task1: 0,
+	Task2: 1
 };
 
 /***/ }),

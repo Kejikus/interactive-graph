@@ -8,6 +8,8 @@ import Toolbar from "./toolbar";
 import { InitAlgorithms } from '../stores/algorithms';
 
 import graphCss from "../../styles/cytoscape.txt.css";
+import BestFirstSearch from "./Tasks/components/BestFirstSearch";
+import AlgorithmWrapper from "./Tasks/AlgorithmWrapper";
 
 cytoscape.use(edgehandles);
 undoRedo(cytoscape);
@@ -21,11 +23,14 @@ export default class Graph extends Component {
 			graphOnClick: null,
 			lastId: -1,
 			lastNodeIdx: -1,
-			addEdgeButton: false
+			addEdgeButton: false,
+			currentTask: -1,
 		};
 		this.graphContainer = React.createRef();
 		this.toolbar = React.createRef();
+		// this.algorithm = React.createRef();
 		this.adjacencyMatrix = props.adjacencyMatrix || null;
+
 		$(document).on("keydown", (e) => {
 			if (e.ctrlKey) {
 				if (e.which === 'D'.charCodeAt(0)) {
@@ -296,12 +301,18 @@ export default class Graph extends Component {
 		}
 	}
 
+	// Algorithms components
+	Algorithms = [
+		BestFirstSearch,
+	];
+
 	// Execute graph algorithm by index
 	executeAlgorithm(index) {
 		// Данные из графа брать:
 		// this.cy.nodes() - объекты нодов
 		// this.cy.edges() - объекты ребер
-		this.tasks.get(index)();
+		this.setState({currentTask: index});
+		this.tasks.get(index)(this.cy);
 	}
 
 	resetMode() {
@@ -511,6 +522,10 @@ export default class Graph extends Component {
 	}
 
 	render() {
+
+		const { currentTask } = this.state;
+		const Algorithm = currentTask !== -1 && this.Algorithms[currentTask];
+
 		return (
 			<div className={ this.props.className }>
 				<Toolbar className="graph-toolbar"
@@ -518,9 +533,12 @@ export default class Graph extends Component {
 				         buttons={[
 					         {value: "Pan/select", onClick: () => this.resetMode()},
 					         {value: "Add node", onClick: () => this.onAddNodeClick()},
-					         {value: "Add edge", onClick: () => this.onAddEdgeClick()}
+					         {value: "Add edge", onClick: () => this.onAddEdgeClick()},
 				         ]} />
-				<div className="graph-container" ref={this.graphContainer}/>
+				<div className="graph-container" ref={this.graphContainer} />
+				<AlgorithmWrapper>
+					{currentTask !== -1 ? <Algorithm /> : <p>Content doesn't exist</p>}
+				</AlgorithmWrapper>
 			</div>
 		);
 	}

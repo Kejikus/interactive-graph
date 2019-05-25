@@ -18,8 +18,10 @@ class App extends Component {
 		this.graph = React.createRef();
 	}
 
-
 	render() {
+
+		console.log('render main');
+
 		return (
 			<div className="main-wrapper">
 				<header className="upper-header card-panel">

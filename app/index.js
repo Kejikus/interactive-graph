@@ -168,6 +168,7 @@ function openFile() {
 
         if (decodeFunc !== null) {
             _fs2.default.readFile(filename, 'utf8', function (err, data) {
+                data = data.replace(/%.*\n/g);
                 var graphData = decodeFunc(data);
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
@@ -235,8 +236,8 @@ function saveAsEdgesVertices() {
 
 function saveAsImage() {
     _electron.dialog.showSaveDialog({
-        title: "Save as incidence matrix",
-        defaultPath: 'graph_image.png',
+        title: "Save as image",
+        defaultPath: "graph_image.png",
         filters: [{ name: "PNG Image", extensions: ["png"] }, { name: "All files", extensions: ["*"] }]
     }, function (filename) {
         if (filename === undefined) return;
@@ -382,7 +383,7 @@ _electron.app.on('window-all-closed', function () {
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+	value: true
 });
 
 var _stringify = __webpack_require__(/*! babel-runtime/core-js/json/stringify */ "./node_modules/babel-runtime/core-js/json/stringify.js");
@@ -437,575 +438,575 @@ var r = _raw2.default;
 // - returns {error: bool, content: str} object
 
 function evfDecode(data) {
-    // Decode Edges/Vertices format
-    // Nodes and edges are ready to be added in the graph and are not colliding
-    // Edge weight can't be < 0
+	// Decode Edges/Vertices format
+	// Nodes and edges are ready to be added in the graph and are not colliding
+	// Edge weight can't be < 0
 
-    var edgesGroup = (0, _xregexp2.default)(r(_templateObject), 's');
-    var edgeEntry = (0, _xregexp2.default)(r(_templateObject2), 'gy');
-    var verticesGroup = (0, _xregexp2.default)(r(_templateObject3), 's');
-    var vertexEntry = (0, _xregexp2.default)(r(_templateObject4), 'gy');
+	var edgesGroup = (0, _xregexp2.default)(r(_templateObject), 's');
+	var edgeEntry = (0, _xregexp2.default)(r(_templateObject2), 'gy');
+	var verticesGroup = (0, _xregexp2.default)(r(_templateObject3), 's');
+	var vertexEntry = (0, _xregexp2.default)(r(_templateObject4), 'gy');
 
-    var edgesMatch = _xregexp2.default.exec(data, edgesGroup);
-    var verticesMatch = _xregexp2.default.exec(data, verticesGroup);
-    console.log(Boolean(edgesMatch));
-    console.log(Boolean(verticesMatch));
-    var edges = {};
-    var nodes = {};
-    var errors = [];
-    var usedIds = [];
-    var lastId = 0;
+	var edgesMatch = _xregexp2.default.exec(data, edgesGroup);
+	var verticesMatch = _xregexp2.default.exec(data, verticesGroup);
+	console.log(Boolean(edgesMatch));
+	console.log(Boolean(verticesMatch));
+	var edges = {};
+	var nodes = {};
+	var errors = [];
+	var usedIds = [];
+	var lastId = 0;
 
-    if (verticesMatch) {
-        var verticesText = verticesMatch.content.replace(/\s/g, '');
-        console.log(verticesText);
-        var lastIdx = 0;
-        var scannedText = '';
-        _xregexp2.default.forEach(verticesText, vertexEntry, function (match, i) {
-            console.log(match);
-            lastIdx = i;
-            var x = parseFloat(match.vertexX);
-            var y = parseFloat(match.vertexY);
-            var id = match.vertexId;
-            if (!usedIds.includes(id)) {
-                nodes[id] = {
-                    group: 'nodes',
-                    data: {
-                        id: id
-                    },
-                    position: {
-                        x: x,
-                        y: y
-                    }
-                };
-                lastId = Math.max(parseInt(id), lastId);
-                usedIds.push(id);
-            } else {
-                errors.push('Error parsing nodes at ' + (lastIdx + 1) + ' element - node with id ' + id + ' was already defined');
-            }
-            scannedText = scannedText.concat(match[0]);
-        });
-        if (scannedText.length !== verticesText.length) {
-            errors.push('Error parsing vertices definition, after ' + (lastIdx + 1) + ' item. (Maybe you forgot a comma?)');
-        }
-    }
+	if (verticesMatch) {
+		var verticesText = verticesMatch.content.replace(/\s/g, '');
+		console.log(verticesText);
+		var lastIdx = 0;
+		var scannedText = '';
+		_xregexp2.default.forEach(verticesText, vertexEntry, function (match, i) {
+			console.log(match);
+			lastIdx = i;
+			var x = parseFloat(match.vertexX);
+			var y = parseFloat(match.vertexY);
+			var id = match.vertexId;
+			if (!usedIds.includes(id)) {
+				nodes[id] = {
+					group: 'nodes',
+					data: {
+						id: id
+					},
+					position: {
+						x: x,
+						y: y
+					}
+				};
+				lastId = Math.max(parseInt(id), lastId);
+				usedIds.push(id);
+			} else {
+				errors.push('Error parsing nodes at ' + (lastIdx + 1) + ' element - node with id ' + id + ' was already defined');
+			}
+			scannedText = scannedText.concat(match[0]);
+		});
+		if (scannedText.length !== verticesText.length) {
+			errors.push('Error parsing vertices definition, after ' + (lastIdx + 1) + ' item. (Maybe you forgot a comma?)');
+		}
+	}
 
-    if (edgesMatch) {
-        var edgesText = edgesMatch.content.replace(/\s/g, '');
-        console.log(edgesText);
-        var _lastIdx = 0;
-        var _scannedText = '';
-        _xregexp2.default.forEach(edgesText, edgeEntry, function (match, i) {
-            console.log(match);
-            _lastIdx = i;
-            var source = null;
-            var target = null;
-            var oriented = false;
-            var edgeId = match.edgeId;
+	if (edgesMatch) {
+		var edgesText = edgesMatch.content.replace(/\s/g, '');
+		console.log(edgesText);
+		var _lastIdx = 0;
+		var _scannedText = '';
+		_xregexp2.default.forEach(edgesText, edgeEntry, function (match, i) {
+			console.log(match);
+			_lastIdx = i;
+			var source = null;
+			var target = null;
+			var oriented = false;
+			var edgeId = match.edgeId;
 
-            var edgeIdUsed = usedIds.includes(edgeId);
-            var srcIdUsed = usedIds.includes(source) && nodes[source] === undefined;
-            var tgtIdUsed = usedIds.includes(target) && nodes[target] === undefined;
+			var edgeIdUsed = usedIds.includes(edgeId);
+			var srcIdUsed = usedIds.includes(source) && nodes[source] === undefined;
+			var tgtIdUsed = usedIds.includes(target) && nodes[target] === undefined;
 
-            if (!edgeIdUsed && !srcIdUsed && !tgtIdUsed) {
-                source = match.edgeSourceId;
-                target = match.edgeTargetId;
-                oriented = match.edgeDirected === '1';
-                if (nodes[source] === undefined) {
-                    nodes[source] = {
-                        group: 'nodes',
-                        data: {
-                            id: source,
-                            layout: true
-                        },
-                        position: {
-                            x: 0,
-                            y: 0
-                        }
-                    };
-                    lastId = Math.max(parseInt(source), lastId);
-                    usedIds.push(source);
-                }
-                if (nodes[target] === undefined) {
-                    nodes[target] = {
-                        group: 'nodes',
-                        data: {
-                            id: target,
-                            layout: true
-                        },
-                        position: {
-                            x: 0,
-                            y: 0
-                        }
-                    };
-                    lastId = Math.max(parseInt(target), lastId);
-                    usedIds.push(target);
-                }
-                edges[edgeId] = {
-                    group: 'edges',
-                    data: {
-                        id: edgeId,
-                        weight: parseFloat(match.edgeWeight),
-                        oriented: oriented,
-                        source: source,
-                        target: target
-                    }
-                };
-                lastId = Math.max(parseInt(edgeId), lastId);
-                usedIds.push(edgeId);
-            } else {
-                if (edgeIdUsed) {
-                    errors.push('Error parsing edges at ' + (_lastIdx + 1) + ' element - can\'t insert edge object - node/edge with id ' + edgeId + ' was already defined');
-                }
-                if (srcIdUsed) {
-                    errors.push('Error parsing edges at ' + (_lastIdx + 1) + ' element - can\'t insert source node - node/edge with id ' + source + ' was already defined');
-                }
-                if (tgtIdUsed) {
-                    errors.push('Error parsing edges at ' + (_lastIdx + 1) + ' element - can\'t insert target node - node/edge with id ' + target + ' was already defined');
-                }
-            }
-            _scannedText = _scannedText.concat(match[0]);
-        });
-        if (_scannedText.length !== edgesText.length) {
-            errors.push('Error in edges definition, after ' + (_lastIdx + 1) + ' item');
-        }
-    }
+			if (!edgeIdUsed && !srcIdUsed && !tgtIdUsed) {
+				source = match.edgeSourceId;
+				target = match.edgeTargetId;
+				oriented = match.edgeDirected === '1';
+				if (nodes[source] === undefined) {
+					nodes[source] = {
+						group: 'nodes',
+						data: {
+							id: source,
+							layout: true
+						},
+						position: {
+							x: 0,
+							y: 0
+						}
+					};
+					lastId = Math.max(parseInt(source), lastId);
+					usedIds.push(source);
+				}
+				if (nodes[target] === undefined) {
+					nodes[target] = {
+						group: 'nodes',
+						data: {
+							id: target,
+							layout: true
+						},
+						position: {
+							x: 0,
+							y: 0
+						}
+					};
+					lastId = Math.max(parseInt(target), lastId);
+					usedIds.push(target);
+				}
+				edges[edgeId] = {
+					group: 'edges',
+					data: {
+						id: edgeId,
+						weight: parseFloat(match.edgeWeight),
+						oriented: oriented,
+						source: source,
+						target: target
+					}
+				};
+				lastId = Math.max(parseInt(edgeId), lastId);
+				usedIds.push(edgeId);
+			} else {
+				if (edgeIdUsed) {
+					errors.push('Error parsing edges at ' + (_lastIdx + 1) + ' element - can\'t insert edge object - node/edge with id ' + edgeId + ' was already defined');
+				}
+				if (srcIdUsed) {
+					errors.push('Error parsing edges at ' + (_lastIdx + 1) + ' element - can\'t insert source node - node/edge with id ' + source + ' was already defined');
+				}
+				if (tgtIdUsed) {
+					errors.push('Error parsing edges at ' + (_lastIdx + 1) + ' element - can\'t insert target node - node/edge with id ' + target + ' was already defined');
+				}
+			}
+			_scannedText = _scannedText.concat(match[0]);
+		});
+		if (_scannedText.length !== edgesText.length) {
+			errors.push('Error in edges definition, after ' + (_lastIdx + 1) + ' item');
+		}
+	}
 
-    return {
-        errors: errors,
-        edges: edges,
-        nodes: nodes,
-        lastId: lastId
-    };
+	return {
+		errors: errors,
+		edges: edges,
+		nodes: nodes,
+		lastId: lastId
+	};
 }
 
 function evfEncode(collection) {
-    // Encode given node and edge objects in the .evf format
-    // content - string containing .evf file contents
-    // error - flag if there were an error, if it's set, content will be empty
+	// Encode given node and edge objects in the .evf format
+	// content - string containing .evf file contents
+	// error - flag if there were an error, if it's set, content will be empty
 
-    var nodesArr = collection.nodes;
-    var edgesArr = collection.edges;
-    var error = { error: true, content: "" };
+	var nodesArr = collection.nodes;
+	var edgesArr = collection.edges;
+	var error = { error: true, content: "" };
 
-    var verticesText = "";
-    var _iteratorNormalCompletion = true;
-    var _didIteratorError = false;
-    var _iteratorError = undefined;
+	var verticesText = "";
+	var _iteratorNormalCompletion = true;
+	var _didIteratorError = false;
+	var _iteratorError = undefined;
 
-    try {
-        for (var _iterator = (0, _getIterator3.default)(nodesArr), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-            var node = _step.value;
+	try {
+		for (var _iterator = (0, _getIterator3.default)(nodesArr), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+			var node = _step.value;
 
-            if (verticesText !== "") verticesText += ",";
+			if (verticesText !== "") verticesText += ",";
 
-            if (isNaN(Number(node.data.id))) return error;
+			if (isNaN(Number(node.data.id))) return error;
 
-            verticesText += node.data.id + '(' + Math.floor(node.position.x) + ',' + Math.floor(node.position.y) + ')';
-        }
-    } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion && _iterator.return) {
-                _iterator.return();
-            }
-        } finally {
-            if (_didIteratorError) {
-                throw _iteratorError;
-            }
-        }
-    }
+			verticesText += node.data.id + '(' + Math.floor(node.position.x) + ',' + Math.floor(node.position.y) + ')';
+		}
+	} catch (err) {
+		_didIteratorError = true;
+		_iteratorError = err;
+	} finally {
+		try {
+			if (!_iteratorNormalCompletion && _iterator.return) {
+				_iterator.return();
+			}
+		} finally {
+			if (_didIteratorError) {
+				throw _iteratorError;
+			}
+		}
+	}
 
-    var edgesText = "";
-    var _iteratorNormalCompletion2 = true;
-    var _didIteratorError2 = false;
-    var _iteratorError2 = undefined;
+	var edgesText = "";
+	var _iteratorNormalCompletion2 = true;
+	var _didIteratorError2 = false;
+	var _iteratorError2 = undefined;
 
-    try {
-        for (var _iterator2 = (0, _getIterator3.default)(edgesArr), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var edge = _step2.value;
+	try {
+		for (var _iterator2 = (0, _getIterator3.default)(edgesArr), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+			var edge = _step2.value;
 
-            if (edgesText !== "") edgesText += ",";
+			if (edgesText !== "") edgesText += ",";
 
-            if (isNaN(Number(edge.data.id))) return error;
+			if (isNaN(Number(edge.data.id))) return error;
 
-            var directed = edge.data.oriented ? 1 : 0;
+			var directed = edge.data.oriented ? 1 : 0;
 
-            edgesText += edge.data.id + '(' + edge.data.weight + ',' + edge.data.source + ',' + edge.data.target + ',' + directed + ')';
-        }
-    } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                _iterator2.return();
-            }
-        } finally {
-            if (_didIteratorError2) {
-                throw _iteratorError2;
-            }
-        }
-    }
+			edgesText += edge.data.id + '(' + edge.data.weight + ',' + edge.data.source + ',' + edge.data.target + ',' + directed + ')';
+		}
+	} catch (err) {
+		_didIteratorError2 = true;
+		_iteratorError2 = err;
+	} finally {
+		try {
+			if (!_iteratorNormalCompletion2 && _iterator2.return) {
+				_iterator2.return();
+			}
+		} finally {
+			if (_didIteratorError2) {
+				throw _iteratorError2;
+			}
+		}
+	}
 
-    var content = 'Vertices{' + verticesText + '}Edges{' + edgesText + '}';
-    return {
-        error: false,
-        content: content
-    };
+	var content = 'Vertices{' + verticesText + '}Edges{' + edgesText + '}';
+	return {
+		error: false,
+		content: content
+	};
 }
 
 function imgdDecode(data) {
-    // imgd - Incidence Matrix Graph Data
-    // Treated as JSON with condition that all JSON is a rectangle array
-    // Row - node, column - edge
+	// imgd - Incidence Matrix Graph Data
+	// Treated as JSON with condition that all JSON is a rectangle array
+	// Row - node, column - edge
 
-    var errors = [];
-    var nodes = {};
-    var edges = {};
-    var lastId = -1;
+	var errors = [];
+	var nodes = {};
+	var edges = {};
+	var lastId = -1;
 
-    // There are many points with return statements, so this would lessen the code
-    var retObj = function retObj() {
-        return {
-            errors: errors,
-            nodes: nodes,
-            edges: edges,
-            lastId: lastId
-        };
-    };
+	// There are many points with return statements, so this would lessen the code
+	var retObj = function retObj() {
+		return {
+			errors: errors,
+			nodes: nodes,
+			edges: edges,
+			lastId: lastId
+		};
+	};
 
-    var matrix = void 0;
-    try {
-        var formatError = false;
-        var rowLength = -1;
-        matrix = JSON.parse(data, function (k, v) {
-            if (formatError) return v;
-            if (typeof v === 'number') {
-                if (!((0, _isInteger2.default)(v) && v >= -1 && v <= 1)) {
-                    formatError = true;
-                    errors.push('Error parsing file - \'' + v + '\' is not integer or not in [-1, 0, 1]');
-                }
-                return v;
-            }
-            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
-                if (k !== '' && typeof v[0] !== 'number') {
-                    formatError = true;
-                    errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
-                }
-                if (k !== '' && rowLength !== -1 && v.length !== rowLength) {
-                    formatError = true;
-                    errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
-                }
-                if (k !== '') rowLength = v.length;
-                return v;
-            }
-            formatError = true;
-            errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
-            return v;
-        });
-        if (formatError) return retObj();
-    } catch (e) {
-        errors.push('Error parsing file - not valid format - check braces and commas');
-        return retObj();
-    }
+	var matrix = void 0;
+	try {
+		var formatError = false;
+		var rowLength = -1;
+		matrix = JSON.parse(data, function (k, v) {
+			if (formatError) return v;
+			if (typeof v === 'number') {
+				if (!((0, _isInteger2.default)(v) && v >= -1 && v <= 1)) {
+					formatError = true;
+					errors.push('Error parsing file - \'' + v + '\' is not integer or not in [-1, 0, 1]');
+				}
+				return v;
+			}
+			if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
+				if (k !== '' && typeof v[0] !== 'number') {
+					formatError = true;
+					errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+				}
+				if (k !== '' && rowLength !== -1 && v.length !== rowLength) {
+					formatError = true;
+					errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+				}
+				if (k !== '') rowLength = v.length;
+				return v;
+			}
+			formatError = true;
+			errors.push('Error parsing file - file must be a rectangle array of numbers [-1, 0, 1]');
+			return v;
+		});
+		if (formatError) return retObj();
+	} catch (e) {
+		errors.push('Error parsing file - not valid format - check braces and commas');
+		return retObj();
+	}
 
-    var nodesCount = matrix.length;
-    var edgesCount = matrix[0].length;
-    for (var i = 0; i < nodesCount; i++) {
-        nodes[i] = {
-            group: 'nodes',
-            data: {
-                id: ++lastId,
-                layout: true
-            },
-            position: {
-                x: 0,
-                y: 0
-            }
-        };
-    }
-    for (var _i = 0; _i < edgesCount; _i++) {
-        var source = null;
-        var target = null;
-        var directed = false;
-        for (var j = 0; j < nodesCount; j++) {
-            if (matrix[j][_i] === 1) {
-                if (source === null) {
-                    source = j;
-                } else if (target === null) {
-                    target = j;
-                } else {
-                    errors.push('Hypergraphs are not (yet) supported');
-                    return retObj();
-                }
-            } else if (matrix[j][_i] === -1) {
-                if (source === null) {
-                    source = j;
-                    directed = true;
-                } else if (target === null && !directed) {
-                    target = source;
-                    source = j;
-                    directed = true;
-                } else {
-                    errors.push('Hypergraphs are not (yet) supported');
-                    return retObj();
-                }
-            }
-        }
-        if (source === null) {
-            errors.push('There are an edge that is not connected to any node (column with zeros)');
-            continue;
-        }
-        if (target === null) target = source;
-        var id = ++lastId;
-        edges[id] = {
-            group: 'edges',
-            data: {
-                id: id,
-                weight: 1,
-                source: source,
-                target: target,
-                oriented: directed
-            }
-        };
-    }
+	var nodesCount = matrix.length;
+	var edgesCount = matrix[0].length;
+	for (var i = 0; i < nodesCount; i++) {
+		nodes[i] = {
+			group: 'nodes',
+			data: {
+				id: ++lastId,
+				layout: true
+			},
+			position: {
+				x: 0,
+				y: 0
+			}
+		};
+	}
+	for (var _i = 0; _i < edgesCount; _i++) {
+		var source = null;
+		var target = null;
+		var directed = false;
+		for (var j = 0; j < nodesCount; j++) {
+			if (matrix[j][_i] === 1) {
+				if (source === null) {
+					source = j;
+				} else if (target === null) {
+					target = j;
+				} else {
+					errors.push('Hypergraphs are not (yet) supported');
+					return retObj();
+				}
+			} else if (matrix[j][_i] === -1) {
+				if (source === null) {
+					source = j;
+					directed = true;
+				} else if (target === null && !directed) {
+					target = source;
+					source = j;
+					directed = true;
+				} else {
+					errors.push('Hypergraphs are not (yet) supported');
+					return retObj();
+				}
+			}
+		}
+		if (source === null) {
+			errors.push('There are an edge that is not connected to any node (column with zeros)');
+			continue;
+		}
+		if (target === null) target = source;
+		var id = ++lastId;
+		edges[id] = {
+			group: 'edges',
+			data: {
+				id: id,
+				weight: 1,
+				source: source,
+				target: target,
+				oriented: directed
+			}
+		};
+	}
 
-    return retObj();
+	return retObj();
 }
 
 function imgdEncode(collection) {
-    var nodesArr = collection.nodes;
-    var edgesArr = collection.edges;
+	var nodesArr = collection.nodes;
+	var edgesArr = collection.edges;
 
-    var nodesCount = nodesArr.length;
-    var edgesCount = edgesArr.length;
+	var nodesCount = nodesArr.length;
+	var edgesCount = edgesArr.length;
 
-    var matrix = [];
-    for (var i = 0; i < nodesCount; i++) {
-        matrix.push([]);
-    }
-    var _loop = function _loop(_i2) {
-        var source = edgesArr[_i2].data.source;
-        var target = edgesArr[_i2].data.target;
-        var directed = edgesArr[_i2].data.oriented;
-        var sourceIdx = nodesArr.findIndex(function (item) {
-            return item.data.id === source;
-        });
-        var targetIdx = nodesArr.findIndex(function (item) {
-            return item.data.id === target;
-        });
+	var matrix = [];
+	for (var i = 0; i < nodesCount; i++) {
+		matrix.push([]);
+	}
+	var _loop = function _loop(_i2) {
+		var source = edgesArr[_i2].data.source;
+		var target = edgesArr[_i2].data.target;
+		var directed = edgesArr[_i2].data.oriented;
+		var sourceIdx = nodesArr.findIndex(function (item) {
+			return item.data.id === source;
+		});
+		var targetIdx = nodesArr.findIndex(function (item) {
+			return item.data.id === target;
+		});
 
-        for (var j = 0; j < nodesCount; j++) {
-            if (j !== sourceIdx && j !== targetIdx) {
-                matrix[j].push(0);
-            } else if (directed && (j === sourceIdx || j === sourceIdx && sourceIdx === targetIdx)) {
-                matrix[j].push(-1);
-            } else {
-                matrix[j].push(1);
-            }
-        }
-    };
+		for (var j = 0; j < nodesCount; j++) {
+			if (j !== sourceIdx && j !== targetIdx) {
+				matrix[j].push(0);
+			} else if (directed && (j === sourceIdx || j === sourceIdx && sourceIdx === targetIdx)) {
+				matrix[j].push(-1);
+			} else {
+				matrix[j].push(1);
+			}
+		}
+	};
 
-    for (var _i2 = 0; _i2 < edgesCount; _i2++) {
-        _loop(_i2);
-    }
+	for (var _i2 = 0; _i2 < edgesCount; _i2++) {
+		_loop(_i2);
+	}
 
-    return {
-        error: false,
-        content: (0, _stringify2.default)(matrix)
-    };
+	return {
+		error: false,
+		content: (0, _stringify2.default)(matrix)
+	};
 }
 
 function amgdDecode(data) {
-    // amgd - Adjacency Matrix Graph Data
-    // Treated as JSON with condition that all JSON is a square array
+	// amgd - Adjacency Matrix Graph Data
+	// Treated as JSON with condition that all JSON is a square array
 
-    var errors = [];
-    var nodes = {};
-    var edges = {};
-    var lastId = -1;
+	var errors = [];
+	var nodes = {};
+	var edges = {};
+	var lastId = -1;
 
-    // There are many points with return statements, so this would lessen the code
-    var retObj = function retObj() {
-        return {
-            errors: errors,
-            nodes: nodes,
-            edges: edges,
-            lastId: lastId
-        };
-    };
+	// There are many points with return statements, so this would lessen the code
+	var retObj = function retObj() {
+		return {
+			errors: errors,
+			nodes: nodes,
+			edges: edges,
+			lastId: lastId
+		};
+	};
 
-    var matrix = void 0;
-    try {
-        var formatError = false;
-        var rowLength = -1;
-        matrix = JSON.parse(data, function (k, v) {
-            if (formatError) return v;
-            if (typeof v === 'number') {
-                if (!(0, _isInteger2.default)(v)) {
-                    formatError = true;
-                    errors.push('Error parsing file - \'' + v + '\' is not integer');
-                }
-                return v;
-            }
-            if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
-                if (k !== '' && typeof v[0] !== 'number') {
-                    formatError = true;
-                    errors.push('Error parsing file - file must be a square array of numbers');
-                }
-                if (rowLength !== -1 && v.length !== rowLength) {
-                    formatError = true;
-                    errors.push('Error parsing file - file must be a square array of numbers');
-                }
-                rowLength = v.length;
-                return v;
-            }
-            formatError = true;
-            errors.push('Error parsing file - file must be a square array of numbers');
-            return v;
-        });
-        if (formatError) return retObj();
-    } catch (e) {
-        errors.push('Error parsing file - not valid format - check braces and commas');
-        return retObj();
-    }
+	var matrix = void 0;
+	try {
+		var formatError = false;
+		var rowLength = -1;
+		matrix = JSON.parse(data, function (k, v) {
+			if (formatError) return v;
+			if (typeof v === 'number') {
+				if (!(0, _isInteger2.default)(v)) {
+					formatError = true;
+					errors.push('Error parsing file - \'' + v + '\' is not integer');
+				}
+				return v;
+			}
+			if ((typeof v === 'undefined' ? 'undefined' : (0, _typeof3.default)(v)) === 'object' && Array.isArray(v)) {
+				if (k !== '' && typeof v[0] !== 'number') {
+					formatError = true;
+					errors.push('Error parsing file - file must be a square array of numbers');
+				}
+				if (rowLength !== -1 && v.length !== rowLength) {
+					formatError = true;
+					errors.push('Error parsing file - file must be a square array of numbers');
+				}
+				rowLength = v.length;
+				return v;
+			}
+			formatError = true;
+			errors.push('Error parsing file - file must be a square array of numbers');
+			return v;
+		});
+		if (formatError) return retObj();
+	} catch (e) {
+		errors.push('Error parsing file - not valid format - check braces and commas');
+		return retObj();
+	}
 
-    var nodesCount = matrix.length;
-    for (var i = 0; i < nodesCount; i++) {
-        nodes[i] = {
-            group: 'nodes',
-            data: {
-                id: ++lastId,
-                layout: true
-            },
-            position: {
-                x: 0,
-                y: 0
-            }
-        };
-    }
-    for (var _i3 = 0; _i3 < nodesCount; _i3++) {
-        for (var j = _i3; j < nodesCount; j++) {
-            var edgeCountSource = matrix[_i3][j];
-            var edgeCountTarget = matrix[j][_i3];
-            if (edgeCountSource !== 0 || edgeCountTarget !== 0) {
-                if (_i3 === j) {
-                    // Loop edges
-                    while (edgeCountSource >= 2) {
-                        var edgeId = ++lastId;
-                        edges[edgeId] = {
-                            group: 'edges',
-                            data: {
-                                id: edgeId,
-                                weight: 1,
-                                source: _i3,
-                                target: j,
-                                oriented: false
-                            }
-                        };
-                        edgeCountSource -= 2;
-                    }
-                    if (edgeCountSource === 1) {
-                        var _edgeId = ++lastId;
-                        edges[_edgeId] = {
-                            group: 'edges',
-                            data: {
-                                id: _edgeId,
-                                weight: 1,
-                                source: _i3,
-                                target: j,
-                                oriented: true
-                            }
-                        };
-                        edgeCountSource--;
-                    }
-                } else {
-                    while (edgeCountSource > 0 && edgeCountTarget > 0) {
-                        var _edgeId2 = ++lastId;
-                        edges[_edgeId2] = {
-                            group: 'edges',
-                            data: {
-                                id: _edgeId2,
-                                weight: 1,
-                                source: _i3,
-                                target: j,
-                                oriented: false
-                            }
-                        };
-                        edgeCountSource--;
-                        edgeCountTarget--;
-                    }
-                    while (edgeCountSource > 0) {
-                        var _edgeId3 = ++lastId;
-                        edges[_edgeId3] = {
-                            group: 'edges',
-                            data: {
-                                id: _edgeId3,
-                                weight: 1,
-                                source: _i3,
-                                target: j,
-                                oriented: true
-                            }
-                        };
-                        edgeCountSource--;
-                    }
-                    while (edgeCountTarget > 0) {
-                        var _edgeId4 = ++lastId;
-                        edges[_edgeId4] = {
-                            group: 'edges',
-                            data: {
-                                id: _edgeId4,
-                                weight: 1,
-                                source: j,
-                                target: _i3,
-                                oriented: true
-                            }
-                        };
-                        edgeCountTarget--;
-                    }
-                }
-            }
-        }
-    }
+	var nodesCount = matrix.length;
+	for (var i = 0; i < nodesCount; i++) {
+		nodes[i] = {
+			group: 'nodes',
+			data: {
+				id: ++lastId,
+				layout: true
+			},
+			position: {
+				x: 0,
+				y: 0
+			}
+		};
+	}
+	for (var _i3 = 0; _i3 < nodesCount; _i3++) {
+		for (var j = _i3; j < nodesCount; j++) {
+			var edgeCountSource = matrix[_i3][j];
+			var edgeCountTarget = matrix[j][_i3];
+			if (edgeCountSource !== 0 || edgeCountTarget !== 0) {
+				if (_i3 === j) {
+					// Loop edges
+					while (edgeCountSource >= 2) {
+						var edgeId = ++lastId;
+						edges[edgeId] = {
+							group: 'edges',
+							data: {
+								id: edgeId,
+								weight: 1,
+								source: _i3,
+								target: j,
+								oriented: false
+							}
+						};
+						edgeCountSource -= 2;
+					}
+					if (edgeCountSource === 1) {
+						var _edgeId = ++lastId;
+						edges[_edgeId] = {
+							group: 'edges',
+							data: {
+								id: _edgeId,
+								weight: 1,
+								source: _i3,
+								target: j,
+								oriented: true
+							}
+						};
+						edgeCountSource--;
+					}
+				} else {
+					while (edgeCountSource > 0 && edgeCountTarget > 0) {
+						var _edgeId2 = ++lastId;
+						edges[_edgeId2] = {
+							group: 'edges',
+							data: {
+								id: _edgeId2,
+								weight: 1,
+								source: _i3,
+								target: j,
+								oriented: false
+							}
+						};
+						edgeCountSource--;
+						edgeCountTarget--;
+					}
+					while (edgeCountSource > 0) {
+						var _edgeId3 = ++lastId;
+						edges[_edgeId3] = {
+							group: 'edges',
+							data: {
+								id: _edgeId3,
+								weight: 1,
+								source: _i3,
+								target: j,
+								oriented: true
+							}
+						};
+						edgeCountSource--;
+					}
+					while (edgeCountTarget > 0) {
+						var _edgeId4 = ++lastId;
+						edges[_edgeId4] = {
+							group: 'edges',
+							data: {
+								id: _edgeId4,
+								weight: 1,
+								source: j,
+								target: _i3,
+								oriented: true
+							}
+						};
+						edgeCountTarget--;
+					}
+				}
+			}
+		}
+	}
 
-    return retObj();
+	return retObj();
 }
 
 function amgdEncode(collection) {
-    var nodesArr = collection.nodes;
-    var edgesArr = collection.edges;
+	var nodesArr = collection.nodes;
+	var edgesArr = collection.edges;
 
-    var nodesCount = nodesArr.length;
-    var edgesCount = edgesArr.length;
+	var nodesCount = nodesArr.length;
+	var edgesCount = edgesArr.length;
 
-    var matrix = [];
-    for (var i = 0; i < nodesCount; i++) {
-        matrix.push(Array(nodesCount).fill(0));
-    }
-    var _loop2 = function _loop2(_i4) {
-        var sourceIdx = nodesArr.findIndex(function (node) {
-            return node.data.id === edgesArr[_i4].data.source;
-        });
-        var targetIdx = nodesArr.findIndex(function (node) {
-            return node.data.id === edgesArr[_i4].data.target;
-        });
-        var directed = edgesArr[_i4].data.oriented;
+	var matrix = [];
+	for (var i = 0; i < nodesCount; i++) {
+		matrix.push(Array(nodesCount).fill(0));
+	}
+	var _loop2 = function _loop2(_i4) {
+		var sourceIdx = nodesArr.findIndex(function (node) {
+			return node.data.id === edgesArr[_i4].data.source;
+		});
+		var targetIdx = nodesArr.findIndex(function (node) {
+			return node.data.id === edgesArr[_i4].data.target;
+		});
+		var directed = edgesArr[_i4].data.oriented;
 
-        matrix[sourceIdx][targetIdx]++;
-        if (!directed) matrix[targetIdx][sourceIdx]++;
-    };
+		matrix[sourceIdx][targetIdx]++;
+		if (!directed) matrix[targetIdx][sourceIdx]++;
+	};
 
-    for (var _i4 = 0; _i4 < edgesCount; _i4++) {
-        _loop2(_i4);
-    }
+	for (var _i4 = 0; _i4 < edgesCount; _i4++) {
+		_loop2(_i4);
+	}
 
-    return {
-        error: false,
-        content: (0, _stringify2.default)(matrix)
-    };
+	return {
+		error: false,
+		content: (0, _stringify2.default)(matrix)
+	};
 }
 
 /***/ }),
@@ -1019,7 +1020,7 @@ function amgdEncode(collection) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("There will be info about authors");
+/* harmony default export */ __webpack_exports__["default"] = ("Все указанные здесь лица обучаются (или обучались) в Московском авиационном институте на факультете №8 «Информационные технологии и прикладная математика», кафедре 813 «Компьютерная математика»\r\n\r\nРазработчики:\r\n    Жовноватый К. 8-Т30-303Б-16\r\n    Волчунович А. 8-Т30-302Б-16 //пока не факт))\r\n\r\nАналитики:\r\n    Картанов А. 8-Т30-303Б-16\r\n    Гуслякова В. 8-Т30-303Б-16\r\n\r\nКоманда поддержки по мат.стату:\r\n    Погодин И. 8-Т30-302Б-16\r\n\r\nБатальон:\r\n    Чуваев П. 8-Т30-302Б-16\r\n    Болдаев М. 8-Т30-302Б-16\r\n    Палочкин И. 8-Т30-301Б-16\r\n    Павлов А. 8-Т30-303Б-16");
 
 /***/ }),
 
@@ -1032,7 +1033,7 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("There will be help for this program");
+/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\r\n\r\nВ меню находятся следующие пункты:\r\n    “File” – пункт меню, в котором реализованы следующие возможности:\r\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\r\n        “Open” (Ctrl + O) – открывает файл с графом.\r\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\r\n            Любой файл может содержать комментарии, начинающиеся со знака %.\r\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\r\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\r\n            Также есть возможность сохранить граф как картинку.\r\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\r\n        “Exit” – выход из программы.\r\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\r\n    “About” – пункт меню “О программе”\r\n        “Help” (F1) – описание программы и ее возможностей.\r\n        “Authors” – имена разработчиков и команды поддержки.\r\n\r\nМатематическое представление графа, содержит следующие возможности:\r\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\r\n\r\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\r\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\r\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\r\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\r\n        Так же можно задать ориентированность ребра, установив галочку.\r\n        По умолчанию ребро не ориентировано, а вес равен 1.\r\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\r\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\r\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\r\n\r\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\r\n** - описание типов, находится в приложении.");
 
 /***/ }),
 

@@ -42,6 +42,7 @@ function openFile() {
 
         if (decodeFunc !== null) {
             fs.readFile(filename, 'utf8', (err, data) => {
+                data = data.replace(/%.*\n/g);
                 let graphData = decodeFunc(data);
                 console.log(graphData);
                 ipcSend("set-graph", graphData);
@@ -124,8 +125,8 @@ function saveAsEdgesVertices() {
 
 function saveAsImage() {
     dialog.showSaveDialog({
-        title: "Save as incidence matrix",
-	    defaultPath: 'graph_image.png',
+        title: "Save as image",
+        defaultPath: "graph_image.png",
         filters: [
             {name: "PNG Image", extensions: ["png"]},
             {name: "All files", extensions: ["*"]}

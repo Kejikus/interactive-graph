@@ -352,6 +352,12 @@ var Graph = function (_Component) {
 					edges: _this2.cy.edges().jsons()
 				});
 			});
+			_electron.ipcRenderer.on("request-save-image", function () {
+				_electron.ipcRenderer.send("send-save-image", _this2.cy.png({
+					output: 'base64',
+					full: true
+				}));
+			});
 			_electron.ipcRenderer.on("save-error", function (sender, err) {
 				_this2.toolbar.current.showMessage("Error saving file: " + err);
 			});

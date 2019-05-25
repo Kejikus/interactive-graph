@@ -7,7 +7,6 @@ import helpTxt from '../text/help.txt';
 import authorsTxt from '../text/authors.txt';
 
 import { TaskTypeEnum } from './const/enums';
-import {AlgorithmsStore} from "./stores/algorithms";
 
 function ipcSend(msgType, obj) {
     win.webContents.send(msgType, obj);
@@ -54,6 +53,7 @@ function openFile() {
 function saveAsIncidenceMatrix() {
     dialog.showSaveDialog({
         title: "Save as incidence matrix",
+	    defaultPath: 'graph.imgd',
         filters: [
             {name: "Incidence matrix", extensions: ["imgd"]},
             {name: "All files", extensions: ["*"]}
@@ -77,6 +77,7 @@ function saveAsIncidenceMatrix() {
 function saveAsAdjacencyMatrix() {
     dialog.showSaveDialog({
         title: "Save as incidence matrix",
+	    defaultPath: 'graph.amgd',
         filters: [
             {name: "Adjacency matrix", extensions: ["amgd"]},
             {name: "All files", extensions: ["*"]}
@@ -100,6 +101,7 @@ function saveAsAdjacencyMatrix() {
 function saveAsEdgesVertices() {
     dialog.showSaveDialog({
         title: "Save as incidence matrix",
+	    defaultPath: 'graph.evf',
         filters: [
             {name: "Edges/Vertices format", extensions: ["evf"]},
             {name: "All files", extensions: ["*"]}
@@ -116,6 +118,27 @@ function saveAsEdgesVertices() {
                     ipcSend("save-success", null);
                 });
             else ipcSend("save-error", 'Error saving in .evf format');
+        });
+    });
+}
+
+function saveAsImage() {
+    dialog.showSaveDialog({
+        title: "Save as incidence matrix",
+	    defaultPath: 'graph_image.png',
+        filters: [
+            {name: "PNG Image", extensions: ["png"]},
+            {name: "All files", extensions: ["*"]}
+        ]
+    }, filename => {
+        if (filename === undefined) return;
+
+        ipcSend("request-save-image", null);
+        ipcMain.once("send-save-image", (sender, obj) => {
+            fs.writeFile(filename, obj, 'base64', err => {
+                if (err) return ipcSend("save-error", err);
+                ipcSend("save-success", null);
+            });
         });
     });
 }
@@ -195,6 +218,10 @@ function createWindow() {
 							label: "Edges/Vertices format",
 							accelerator: "CommandOrControl+S",
 							click: saveAsEdgesVertices
+						},
+						{
+							label: "PNG Image",
+							click: saveAsImage
 						}
 					]
 				},

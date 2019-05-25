@@ -189,6 +189,12 @@ export default class Graph extends Component {
 				edges: this.cy.edges().jsons()
 			});
 		});
+		ipcRenderer.on("request-save-image", () => {
+			ipcRenderer.send("send-save-image", this.cy.png({
+				output: 'base64',
+				full: true
+			}));
+		});
 		ipcRenderer.on("save-error", (sender, err) => {
 			this.toolbar.current.showMessage("Error saving file: " + err);
 		});

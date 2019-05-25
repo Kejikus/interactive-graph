@@ -121,7 +121,7 @@ class AdjacencyMatrix extends Component {
 					</colgroup>
 					<thead>
 					<tr>
-						<th className="root-cell"></th>
+						<th className="root-cell" />
 						{headers}
 					</tr>
 					</thead>

@@ -5,8 +5,8 @@ export class InitAlgorithms {
 		const tasks = new Map();
 		const alg = new AlgorithmsStore();
 
-		tasks.set(TaskTypeEnum.Task1, alg.task1);
-		tasks.set(TaskTypeEnum.Task2, alg.task2);
+		tasks.set(TaskTypeEnum.Task1, alg.BestFirstSearch);
+		tasks.set(TaskTypeEnum.Task2, alg.BestFirstSearch);
 
 		return tasks;
 	}
@@ -15,12 +15,14 @@ export class InitAlgorithms {
 class AlgorithmsStore {
 	
 
-	task1() {
+	task1(cy) {
 		console.log('1');
 	}
 
-	task2() {
+	BestFirstSearch(cy) {
+		console.log(cy);
 
-		console.log('4');
 	}
+
+
 }

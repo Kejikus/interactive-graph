@@ -1342,10 +1342,26 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 var TaskTypeEnum = exports.TaskTypeEnum = {
-	Task1: 0,
-	Task2: 1,
-	Task3: 2,
-	Task4: 3
+	BreadthFirstSearch: 0,
+	BestFirstSearch: 1,
+	Dijkstra: 2,
+	AStar: 3,
+	WeightRadiusDiameterPower: 4,
+	GraphIsomorphism: 5,
+	GraphConnectivity: 6,
+	GraphAddition: 7,
+	GraphPlanarity: 8,
+	RecoverGraphFromVector: 9,
+	ExtremeGraphs: 10,
+	MinimumSpanningTree: 11,
+	CycleProblem: 12,
+	ColoringGraph: 13,
+	TheProblemOfWeddings: 14,
+	SupplementTwoComplex: 15,
+	RecoveryOfTwoComplexVector: 16,
+	ExtremeTwoComplex: 17,
+	TravelingSalesmanTask: 18,
+	TheEffectivenessOfPathFindingAlgorithms: 19
 };
 
 /***/ }),
@@ -1587,10 +1603,10 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			var tasks = new _map2.default();
 			var alg = new AlgorithmsStore();
 
-			tasks.set(_enums.TaskTypeEnum.Task1, alg.BestFirstSearch);
-			tasks.set(_enums.TaskTypeEnum.Task2, alg.BestFirstSearch);
-			tasks.set(_enums.TaskTypeEnum.Task3, alg.BestFirstSearch);
-			tasks.set(_enums.TaskTypeEnum.Task4, alg.Dijkstra);
+			tasks.set(_enums.TaskTypeEnum.BreadthFirstSearch, alg.BreadthFirstSearch());
+			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
+			tasks.set(_enums.TaskTypeEnum.Dijkstra, alg.Dijkstra);
+			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
 
 			return tasks;
 		}
@@ -1604,15 +1620,14 @@ var AlgorithmsStore = function () {
 	}
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
-		key: 'task1',
-		value: function task1(cy) {
-			console.log('1');
-		}
+		key: 'BreadthFirstSearch',
+		value: function BreadthFirstSearch(cy) {}
 	}, {
 		key: 'BestFirstSearch',
-		value: function BestFirstSearch(cy) {
-			console.log(cy);
-		}
+		value: function BestFirstSearch(cy) {}
+	}, {
+		key: 'AStar',
+		value: function AStar(cy) {}
 	}, {
 		key: 'Dijkstra',
 		value: function Dijkstra(cy) {
@@ -1664,7 +1679,7 @@ var AlgorithmsStore = function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}");
 
 /***/ }),
 
@@ -1707,7 +1722,7 @@ if(false) {}
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\r\n\r\nВ меню находятся следующие пункты:\r\n    “File” – пункт меню, в котором реализованы следующие возможности:\r\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\r\n        “Open” (Ctrl + O) – открывает файл с графом.\r\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\r\n            Любой файл может содержать комментарии, начинающиеся со знака %.\r\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\r\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\r\n            Также есть возможность сохранить граф как картинку.\r\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\r\n        “Exit” – выход из программы.\r\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\r\n    “About” – пункт меню “О программе”\r\n        “Help” (F1) – описание программы и ее возможностей.\r\n        “Authors” – имена разработчиков и команды поддержки.\r\n\r\nМатематическое представление графа, содержит следующие возможности:\r\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\r\n\r\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\r\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\r\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\r\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\r\n        Так же можно задать ориентированность ребра, установив галочку.\r\n        По умолчанию ребро не ориентировано, а вес равен 1.\r\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\r\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\r\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\r\n\r\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\r\n** - описание типов, находится в приложении.");
+/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\n\nВ меню находятся следующие пункты:\n    “File” – пункт меню, в котором реализованы следующие возможности:\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\n        “Open” (Ctrl + O) – открывает файл с графом.\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\n            Любой файл может содержать комментарии, начинающиеся со знака %.\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\n            Также есть возможность сохранить граф как картинку.\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\n        “Exit” – выход из программы.\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\n    “About” – пункт меню “О программе”\n        “Help” (F1) – описание программы и ее возможностей.\n        “Authors” – имена разработчиков и команды поддержки.\n\nМатематическое представление графа, содержит следующие возможности:\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\n\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\n        Так же можно задать ориентированность ребра, установив галочку.\n        По умолчанию ребро не ориентировано, а вес равен 1.\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\n\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\n** - описание типов, находится в приложении.");
 
 /***/ }),
 

@@ -6,24 +6,27 @@ export class InitAlgorithms {
 		const tasks = new Map();
 		const alg = new AlgorithmsStore();
 
-		tasks.set(TaskTypeEnum.Task1, alg.BestFirstSearch);
-		tasks.set(TaskTypeEnum.Task2, alg.BestFirstSearch);
-		tasks.set(TaskTypeEnum.Task3, alg.BestFirstSearch);
-		tasks.set(TaskTypeEnum.Task4, alg.Dijkstra);
+		tasks.set(TaskTypeEnum.BreadthFirstSearch, alg.BreadthFirstSearch());
+		tasks.set(TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
+		tasks.set(TaskTypeEnum.Dijkstra, alg.Dijkstra);
+		tasks.set(TaskTypeEnum.AStar, alg.AStar);
 
 		return tasks;
 	}
 }
 
 class AlgorithmsStore {
-	
 
-	task1(cy) {
-		console.log('1');
+
+	BreadthFirstSearch(cy) {
+
 	}
 
 	BestFirstSearch(cy) {
-		console.log(cy);
+
+	}
+
+	AStar(cy) {
 
 	}
 

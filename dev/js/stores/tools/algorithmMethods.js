@@ -11,13 +11,17 @@ export function dijkstra(cy, rootNode) {
 	let visitedNodes = cy.collection();
 	for (;;) {
 		// Calculating new distances and ordering
-		const neighborNodes = currentNode.neighborhood('node').difference(visitedNodes);
+		let neighborNodes = currentNode.neighborhood('node').difference(visitedNodes);
 		neighborNodes.forEach(node => {
 			const shortestEdge1 = currentNode.edgesWith(node)
 				.difference(`[target="${currentNode.data('id')}"][?oriented]`)
 				.min(weight).ele;
-			const newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
-			setSum(node, Math.min(currentSum(node), newWeight));
+			if (shortestEdge1 !== undefined) {
+				const newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
+				setSum(node, Math.min(currentSum(node), newWeight));
+			} else {
+				neighborNodes = neighborNodes.difference(node);
+			}
 		});
 
 		if (neighborNodes.length === 0) break;
@@ -64,4 +68,10 @@ export function generateTable(matrix, colWidth) {
 	});
 
 	return `${header}\n${rows}`;
+}
+
+export function generateVectorText(vector, prependText) {
+	if (prependText) prependText += ' ';
+	else prependText = '';
+	return vector.reduce((text, value) => text.concat(`${prependText}${value[0].data('nodeIdx')}: ${value[1]}\n`), '');
 }

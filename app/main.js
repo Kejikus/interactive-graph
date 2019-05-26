@@ -1616,22 +1616,24 @@ var AlgorithmsStore = function () {
 	(0, _createClass3.default)(AlgorithmsStore, [{
 		key: "WeightRadiusDiameterPower",
 		value: function WeightRadiusDiameterPower(cy) {
-
 			var radius = -1;
 			var diameter = 0;
-			var vectorDegree = [];
+			var degreeVector = [];
+			var nodeWeightVector = [];
 
-			var node = 0;
 			var pathLength = 1;
 
-			for (var i = 0; i < cy.nodes().length; ++i) {
-				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, cy.nodes()[i]);
+			var nodes = cy.nodes();
+
+			for (var i = 0; i < nodes.length; ++i) {
+				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, nodes[i]);
 				var biggestValue = 0;
 				for (var j = 0; j < dijkstraResult.length; ++j) {
 					if (biggestValue < dijkstraResult[j][pathLength]) {
 						biggestValue = dijkstraResult[j][pathLength];
 					}
 				}
+				nodeWeightVector.push([nodes[i], biggestValue]);
 
 				if (diameter < biggestValue) {
 					diameter = biggestValue;
@@ -1640,7 +1642,21 @@ var AlgorithmsStore = function () {
 				if (radius > biggestValue || radius === -1) {
 					radius = biggestValue;
 				}
+
+				degreeVector.push([nodes[i], (0, _algorithmMethods.nodeDegree)(nodes[i])]);
 			}
+
+			var weightVecText = (0, _algorithmMethods.generateVectorText)(nodeWeightVector, 'Node');
+			var degreeVecText = (0, _algorithmMethods.generateVectorText)(degreeVector, 'Node');
+
+			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Radius, Diameter, Weight, Degree', "Radius: " + radius + "\nDiameter: " + diameter + "\n\nWeight vector:\n" + weightVecText + "\nDegree vector:\n" + degreeVecText);
+
+			return {
+				nodeWeightVector: nodeWeightVector,
+				degreeVector: degreeVector,
+				radius: radius,
+				diameter: diameter
+			};
 		}
 	}, {
 		key: "BestFirstSearch",
@@ -1664,9 +1680,7 @@ var AlgorithmsStore = function () {
 				var pathLengths = (0, _algorithmMethods.dijkstra)(cy, currentRoot);
 
 				if (currentRoot === root) {
-					var textVector = pathLengths.reduce(function (text, value) {
-						return text.concat("To " + value[0].data('nodeIdx') + ": " + value[1] + "\n");
-					}, '');
+					var textVector = (0, _algorithmMethods.generateVectorText)(pathLengths, 'To node');
 
 					_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Dijkstra vector', "Path from root to all other nodes:\n" + textVector);
 				}
@@ -1810,7 +1824,9 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 exports.dijkstra = dijkstra;
+exports.nodeDegree = nodeDegree;
 exports.generateTable = generateTable;
+exports.generateVectorText = generateVectorText;
 function dijkstra(cy, rootNode) {
 	var weight = function weight(edge) {
 		return edge.data('weight');
@@ -1826,16 +1842,21 @@ function dijkstra(cy, rootNode) {
 	var currentNode = rootNode;
 	setSum(rootNode, 0);
 	var visitedNodes = cy.collection();
-	for (;;) {
+
+	var _loop = function _loop() {
 		// Calculating new distances and ordering
 		var neighborNodes = currentNode.neighborhood('node').difference(visitedNodes);
 		neighborNodes.forEach(function (node) {
 			var shortestEdge1 = currentNode.edgesWith(node).difference("[target=\"" + currentNode.data('id') + "\"][?oriented]").min(weight).ele;
-			var newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
-			setSum(node, Math.min(currentSum(node), newWeight));
+			if (shortestEdge1 !== undefined) {
+				var newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
+				setSum(node, Math.min(currentSum(node), newWeight));
+			} else {
+				neighborNodes = neighborNodes.difference(node);
+			}
 		});
 
-		if (neighborNodes.length === 0) break;
+		if (neighborNodes.length === 0) return "break";
 
 		var nextNode = neighborNodes.min(function (node) {
 			return currentSum(node);
@@ -1843,6 +1864,12 @@ function dijkstra(cy, rootNode) {
 
 		visitedNodes.merge(currentNode);
 		currentNode = nextNode;
+	};
+
+	for (;;) {
+		var _ret = _loop();
+
+		if (_ret === "break") break;
 	}
 
 	var pathLengthVector = cy.nodes().sort(function (node1, node2) {
@@ -1856,6 +1883,14 @@ function dijkstra(cy, rootNode) {
 	});
 
 	return pathLengthVector;
+}
+
+function nodeDegree(node) {
+	var outgoingEdges = node.neighborhood('edge').difference("[source=\"" + node.data('id') + "\"][target!=\"" + node.data('id') + "\"][?oriented]").length;
+	var directedLoops = node.neighborhood("edge[source=\"" + node.data('id') + "\"][target=\"" + node.data('id') + "\"][?oriented]").length;
+	var undirectedLoops = node.neighborhood("edge[source=\"" + node.data('id') + "\"][target=\"" + node.data('id') + "\"][!oriented]").length * 2;
+
+	return outgoingEdges + directedLoops + undirectedLoops;
 }
 
 function generateTable(matrix, colWidth) {
@@ -1879,6 +1914,13 @@ function generateTable(matrix, colWidth) {
 	return header + "\n" + rows;
 }
 
+function generateVectorText(vector, prependText) {
+	if (prependText) prependText += ' ';else prependText = '';
+	return vector.reduce(function (text, value) {
+		return text.concat("" + prependText + value[0].data('nodeIdx') + ": " + value[1] + "\n");
+	}, '');
+}
+
 /***/ }),
 
 /***/ "./dev/styles/cytoscape.txt.css":
@@ -1890,7 +1932,7 @@ function generateTable(matrix, colWidth) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n\n.highlight {\n    line-color: red;\n    background-gradient-stop-colors: white white red red;\n}\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n\r\n.highlight {\r\n    line-color: red;\r\n    background-gradient-stop-colors: white white red red;\r\n}\r\n");
 
 /***/ }),
 

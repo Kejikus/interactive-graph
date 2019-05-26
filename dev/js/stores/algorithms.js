@@ -1,6 +1,6 @@
 import { TaskTypeEnum } from '../const/enums';
 import {messager, msgTypes} from "../rendererMessager";
-import {dijkstra, generateTable} from "./tools/algorithmMethods";
+import {dijkstra, generateTable, generateVectorText, nodeDegree} from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
 	static create() {
@@ -81,22 +81,24 @@ class AlgorithmsStore {
 	}
 
 	WeightRadiusDiameterPower(cy) {
-
 		let radius = -1;
 		let diameter = 0;
-		const vectorDegree = [];
+		const degreeVector = [];
+		const nodeWeightVector = [];
 
-		const node = 0;
 		const pathLength = 1;
 
-		for (let i = 0; i < cy.nodes().length; ++i) {
-			const dijkstraResult = dijkstra(cy, cy.nodes()[i]);
+		const nodes = cy.nodes();
+
+		for (let i = 0; i < nodes.length; ++i) {
+			const dijkstraResult = dijkstra(cy, nodes[i]);
 			let biggestValue = 0;
 			for (let j = 0; j < dijkstraResult.length; ++j) {
 				if (biggestValue < dijkstraResult[j][pathLength]) {
 					biggestValue = dijkstraResult[j][pathLength];
 				}
 			}
+			nodeWeightVector.push([nodes[i], biggestValue]);
 
 			if (diameter < biggestValue) {
 				diameter = biggestValue;
@@ -105,8 +107,23 @@ class AlgorithmsStore {
 			if (radius > biggestValue || radius === -1) {
 				radius = biggestValue;
 			}
+
+			degreeVector.push([nodes[i], nodeDegree(nodes[i])]);
 		}
 
+		const weightVecText = generateVectorText(nodeWeightVector, 'Node');
+		const degreeVecText = generateVectorText(degreeVector, 'Node');
+
+		messager.send(msgTypes.showMessageBox, 'Radius, Diameter, Weight, Degree',
+			`Radius: ${radius}\nDiameter: ${diameter}\n\nWeight vector:\n${weightVecText}\nDegree vector:\n${degreeVecText}`
+		);
+
+		return {
+			nodeWeightVector: nodeWeightVector,
+			degreeVector: degreeVector,
+			radius: radius,
+			diameter: diameter
+		};
 	}
 
 	BestFirstSearch(cy) {
@@ -132,7 +149,7 @@ class AlgorithmsStore {
 				let pathLengths = dijkstra(cy, currentRoot);
 
 				if (currentRoot === root) {
-					const textVector = pathLengths.reduce((text, value) => text.concat(`To ${value[0].data('nodeIdx')}: ${value[1]}\n`), '');
+					const textVector = generateVectorText(pathLengths, 'To node');
 
 					messager.send(msgTypes.showMessageBox, 'Dijkstra vector',
 						`Path from root to all other nodes:\n${textVector}`);

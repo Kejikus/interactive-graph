@@ -1,6 +1,12 @@
 import { TaskTypeEnum } from '../const/enums';
 import {messager, msgTypes} from "../rendererMessager";
-import {dijkstra, generateTable, generateVectorText, nodeDegree, nonIncidentNodes} from "./tools/algorithmMethods";
+import {
+	dijkstra,
+	generateTable,
+	generateVectorText,
+	nodeDegree,
+	nonIncidentNodes,
+	getArrayOfKeysFromMap} from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
 	static create() {
@@ -16,7 +22,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.GraphAddition, alg.GraphAddition);
 		tasks.set(TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
 		tasks.set(TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
-		tasks.set(TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree());
+		tasks.set(TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree);
 
 		return tasks;
 	}

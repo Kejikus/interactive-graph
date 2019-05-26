@@ -1624,7 +1624,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.GraphAddition, alg.GraphAddition);
 			tasks.set(_enums.TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
 			tasks.set(_enums.TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
-			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree());
+			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree);
 
 			return tasks;
 		}
@@ -1821,7 +1821,7 @@ var AlgorithmsStore = function () {
 			var sortMap = new _map2.default([].concat((0, _toConsumableArray3.default)(edgesCounter.entries())).sort(function (a, b) {
 				return b[1] - a[1];
 			}));
-			var k = getArrayOfKeysFromMap(sortMap);
+			var k = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
 			var keys = k.reverse();
 			var underTree = [];
 			for (var _i2 = 0; _i2 < nodes.length; ++_i2) {

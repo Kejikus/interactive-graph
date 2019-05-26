@@ -6,7 +6,8 @@ import {
 	generateVectorText,
 	nodeDegree,
 	nonIncidentNodes,
-	getArrayOfKeysFromMap} from "./tools/algorithmMethods";
+	getArrayOfKeysFromMap
+} from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
 	static create() {
@@ -312,6 +313,8 @@ class AlgorithmsStore {
 				const color = getRandomColor();
 				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
 			}
+
+			return index - 1;
 		}
 	}
 

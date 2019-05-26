@@ -1613,18 +1613,17 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 		key: "create",
 		value: function create() {
 			var tasks = new _map2.default();
-			var alg = new AlgorithmsStore();
 
 			tasks.set(_enums.TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
-			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
+			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, AlgorithmsStore.BestFirstSearch);
 			tasks.set(_enums.TaskTypeEnum.WeightRadiusDiameterPower, AlgorithmsStore.WeightRadiusDiameterPower);
-			tasks.set(_enums.TaskTypeEnum.Dijkstra, alg.Dijkstra);
-			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
-			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
-			tasks.set(_enums.TaskTypeEnum.GraphAddition, alg.GraphAddition);
-			tasks.set(_enums.TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
-			tasks.set(_enums.TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
-			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree);
+			tasks.set(_enums.TaskTypeEnum.Dijkstra, AlgorithmsStore.Dijkstra);
+			tasks.set(_enums.TaskTypeEnum.AStar, AlgorithmsStore.AStar);
+			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, AlgorithmsStore.GraphConnectivity);
+			tasks.set(_enums.TaskTypeEnum.GraphAddition, AlgorithmsStore.GraphAddition);
+			tasks.set(_enums.TaskTypeEnum.ColoringGraph, AlgorithmsStore.ColoringGraph);
+			tasks.set(_enums.TaskTypeEnum.GraphPlanarity, AlgorithmsStore.GraphPlanarity);
+			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
 
 			return tasks;
 		}
@@ -1643,6 +1642,115 @@ var AlgorithmsStore = function () {
 	}, {
 		key: "AStar",
 		value: function AStar(cy) {}
+	}], [{
+		key: "BreadthFirstSearch",
+		value: function BreadthFirstSearch(cy) {
+			// Validation
+			var selected = cy.$(':selected');
+			var isNotValid = selected.length !== 2 || !selected[0].isNode() && !selected[1].isNode();
+			var isOrientedEdges = cy.edges().filter('[?oriented]').length !== 0;
+			if (isNotValid) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Select two nodes and start algorithm again');
+				return;
+			}
+
+			if (isOrientedEdges) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Invalid graph for dat algorithm');
+				return;
+			}
+
+			// Initialization
+			var startNode = selected[0];
+			var endNode = selected[1];
+			var frontier = [];
+			var visited = [];
+			var paths = new _map2.default();
+
+			frontier.push(startNode);
+			// перебирает все ноды графа, для того чтобы найти кратчайший путь
+			while (frontier.length > 0) {
+				var current = frontier.shift();
+				var nodes_neighbors = current.neighborhood().filter('node');
+				for (var i = 0; i < nodes_neighbors.length; ++i) {
+					var node = nodes_neighbors[i];
+					if (!visited.includes(node)) {
+						frontier.push(node);
+						visited.push(node);
+						paths.set(node, current);
+					}
+				}
+			}
+
+			// восстанавливает путь из start до end
+			var current_node = endNode;
+			var result_path = [current_node];
+			while (current_node !== startNode) {
+				result_path.push(paths.get(current_node));
+				current_node = paths.get(current_node);
+			}
+
+			var result = result_path.reverse();
+			var result_collection = cy.collection(result);
+
+			for (var _i = 0; _i < result.length - 1; ++_i) {
+				var short_edge = result[_i].edgesWith(result[_i + 1]).min(function (edge) {
+					return edge.data('weight');
+				}).ele;
+				result_collection.merge(short_edge);
+			}
+
+			result_collection.addClass('highlight');
+
+			console.log('short path: ', result.length - 1);
+			//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
+
+			return result.length - 1;
+		}
+	}, {
+		key: "WeightRadiusDiameterPower",
+		value: function WeightRadiusDiameterPower(cy) {
+			var radius = -1;
+			var diameter = 0;
+			var degreeVector = [];
+			var nodeWeightVector = [];
+
+			var pathLength = 1;
+
+			var nodes = cy.nodes();
+
+			for (var i = 0; i < nodes.length; ++i) {
+				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, nodes[i]);
+				var biggestValue = 0;
+				for (var j = 0; j < dijkstraResult.length; ++j) {
+					if (biggestValue < dijkstraResult[j][pathLength]) {
+						biggestValue = dijkstraResult[j][pathLength];
+					}
+				}
+				nodeWeightVector.push([nodes[i], biggestValue]);
+
+				if (diameter < biggestValue) {
+					diameter = biggestValue;
+				}
+
+				if (radius > biggestValue || radius === -1) {
+					radius = biggestValue;
+				}
+
+				degreeVector.push([nodes[i], (0, _algorithmMethods.nodeDegree)(nodes[i])]);
+			}
+
+			var weightVecText = (0, _algorithmMethods.generateVectorText)(nodeWeightVector, 'Node');
+			var degreeVecText = (0, _algorithmMethods.generateVectorText)(degreeVector, 'Node');
+
+			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Radius, Diameter, Weight, Degree', "Radius: " + radius + "\nDiameter: " + diameter + "\n\nWeight vector:\n" + weightVecText + "\nDegree vector:\n" + degreeVecText);
+
+			return {
+				nodeWeightVector: nodeWeightVector,
+				degreeVector: degreeVector,
+				radius: radius,
+				diameter: diameter
+			};
+		}
 	}, {
 		key: "Dijkstra",
 		value: function Dijkstra(cy) {
@@ -1786,12 +1894,12 @@ var AlgorithmsStore = function () {
 				keys.push(key);
 			});
 
-			for (var _i = 0; _i < keys.length; ++_i) {
-				var elem = keys[_i];
+			for (var _i2 = 0; _i2 < keys.length; ++_i2) {
+				var elem = keys[_i2];
 				var needToColor = cy.collection();
 				if (!(colored.and(elem).length > 0)) {
 					needToColor.merge(elem);
-					for (var j = _i + 1; j < sortMap.size; ++j) {
+					for (var j = _i2 + 1; j < sortMap.size; ++j) {
 						if ((0, _algorithmMethods.nonIncidentNodes)(keys[j]).and(elem).length > 0) {
 							needToColor.merge(keys[j]);
 						}
@@ -1807,6 +1915,8 @@ var AlgorithmsStore = function () {
 					var _color = getRandomColor();
 					needToColor.style('background-gradient-stop-colors', "white white " + _color + " " + _color);
 				}
+
+				return index - 1;
 			}
 		}
 	}, {
@@ -1824,17 +1934,17 @@ var AlgorithmsStore = function () {
 			var k = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
 			var keys = k.reverse();
 			var underTree = [];
-			for (var _i2 = 0; _i2 < nodes.length; ++_i2) {
-				underTree.push([nodes[_i2]]);
+			for (var _i3 = 0; _i3 < nodes.length; ++_i3) {
+				underTree.push([nodes[_i3]]);
 			}
 
 			var resultEdges = cy.collection();
-			for (var _i3 = 0; _i3 < keys.length; ++_i3) {
+			for (var _i4 = 0; _i4 < keys.length; ++_i4) {
 				var firstIndex = 0;
 				var secondIndex = 0;
 				for (var j = 0; j < underTree.length; ++j) {
-					var first = keys[_i3].source();
-					var second = keys[_i3].target();
+					var first = keys[_i4].source();
+					var second = keys[_i4].target();
 					if (underTree[j].includes(first)) {
 						firstIndex = j;
 					}
@@ -1844,124 +1954,15 @@ var AlgorithmsStore = function () {
 				}
 
 				if (firstIndex !== secondIndex) {
-					resultEdges.merge(keys[_i3]);
-					for (var _i4 = 0; _i4 < underTree[secondIndex].length; ++_i4) {
-						underTree[firstIndex].push(underTree[secondIndex][_i4]);
+					resultEdges.merge(keys[_i4]);
+					for (var _i5 = 0; _i5 < underTree[secondIndex].length; ++_i5) {
+						underTree[firstIndex].push(underTree[secondIndex][_i5]);
 					}
 					underTree.splice(secondIndex, 1);
 				}
 			}
 			resultEdges.style('background-gradient-stop-colors', "white white red red");
 			resultEdges.style('line-color', 'red');
-		}
-	}], [{
-		key: "BreadthFirstSearch",
-		value: function BreadthFirstSearch(cy) {
-			// Validation
-			var selected = cy.$(':selected');
-			var isNotValid = selected.length !== 2 || !selected[0].isNode() && !selected[1].isNode();
-			var isOrientedEdges = cy.edges().filter('[?oriented]').length !== 0;
-			if (isNotValid) {
-				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Select two nodes and start algorithm again');
-				return;
-			}
-
-			if (isOrientedEdges) {
-				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Invalid graph for dat algorithm');
-				return;
-			}
-
-			// Initialization
-			var startNode = selected[0];
-			var endNode = selected[1];
-			var frontier = [];
-			var visited = [];
-			var paths = new _map2.default();
-
-			frontier.push(startNode);
-			// перебирает все ноды графа, для того чтобы найти кратчайший путь
-			while (frontier.length > 0) {
-				var current = frontier.shift();
-				var nodes_neighbors = current.neighborhood().filter('node');
-				for (var i = 0; i < nodes_neighbors.length; ++i) {
-					var node = nodes_neighbors[i];
-					if (!visited.includes(node)) {
-						frontier.push(node);
-						visited.push(node);
-						paths.set(node, current);
-					}
-				}
-			}
-
-			// восстанавливает путь из start до end
-			var current_node = endNode;
-			var result_path = [current_node];
-			while (current_node !== startNode) {
-				result_path.push(paths.get(current_node));
-				current_node = paths.get(current_node);
-			}
-
-			var result = result_path.reverse();
-			var result_collection = cy.collection(result);
-
-			for (var _i5 = 0; _i5 < result.length - 1; ++_i5) {
-				var short_edge = result[_i5].edgesWith(result[_i5 + 1]).min(function (edge) {
-					return edge.data('weight');
-				}).ele;
-				result_collection.merge(short_edge);
-			}
-
-			result_collection.addClass('highlight');
-
-			console.log('short path: ', result.length - 1);
-			//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
-
-			return result.length - 1;
-		}
-	}, {
-		key: "WeightRadiusDiameterPower",
-		value: function WeightRadiusDiameterPower(cy) {
-			var radius = -1;
-			var diameter = 0;
-			var degreeVector = [];
-			var nodeWeightVector = [];
-
-			var pathLength = 1;
-
-			var nodes = cy.nodes();
-
-			for (var i = 0; i < nodes.length; ++i) {
-				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, nodes[i]);
-				var biggestValue = 0;
-				for (var j = 0; j < dijkstraResult.length; ++j) {
-					if (biggestValue < dijkstraResult[j][pathLength]) {
-						biggestValue = dijkstraResult[j][pathLength];
-					}
-				}
-				nodeWeightVector.push([nodes[i], biggestValue]);
-
-				if (diameter < biggestValue) {
-					diameter = biggestValue;
-				}
-
-				if (radius > biggestValue || radius === -1) {
-					radius = biggestValue;
-				}
-
-				degreeVector.push([nodes[i], (0, _algorithmMethods.nodeDegree)(nodes[i])]);
-			}
-
-			var weightVecText = (0, _algorithmMethods.generateVectorText)(nodeWeightVector, 'Node');
-			var degreeVecText = (0, _algorithmMethods.generateVectorText)(degreeVector, 'Node');
-
-			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Radius, Diameter, Weight, Degree', "Radius: " + radius + "\nDiameter: " + diameter + "\n\nWeight vector:\n" + weightVecText + "\nDegree vector:\n" + degreeVecText);
-
-			return {
-				nodeWeightVector: nodeWeightVector,
-				degreeVector: degreeVector,
-				radius: radius,
-				diameter: diameter
-			};
 		}
 	}]);
 	return AlgorithmsStore;

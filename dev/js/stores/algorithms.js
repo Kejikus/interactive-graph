@@ -11,18 +11,17 @@ import {
 export class InitAlgorithms {
 	static create() {
 		const tasks = new Map();
-		const alg = new AlgorithmsStore();
 
 		tasks.set(TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
-		tasks.set(TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
+		tasks.set(TaskTypeEnum.BestFirstSearch, AlgorithmsStore.BestFirstSearch);
 		tasks.set(TaskTypeEnum.WeightRadiusDiameterPower, AlgorithmsStore.WeightRadiusDiameterPower);
-		tasks.set(TaskTypeEnum.Dijkstra, alg.Dijkstra);
-		tasks.set(TaskTypeEnum.AStar, alg.AStar);
-		tasks.set(TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
-		tasks.set(TaskTypeEnum.GraphAddition, alg.GraphAddition);
-		tasks.set(TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
-		tasks.set(TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
-		tasks.set(TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree);
+		tasks.set(TaskTypeEnum.Dijkstra, AlgorithmsStore.Dijkstra);
+		tasks.set(TaskTypeEnum.AStar, AlgorithmsStore.AStar);
+		tasks.set(TaskTypeEnum.GraphConnectivity, AlgorithmsStore.GraphConnectivity);
+		tasks.set(TaskTypeEnum.GraphAddition, AlgorithmsStore.GraphAddition);
+		tasks.set(TaskTypeEnum.ColoringGraph, AlgorithmsStore.ColoringGraph);
+		tasks.set(TaskTypeEnum.GraphPlanarity, AlgorithmsStore.GraphPlanarity);
+		tasks.set(TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
 
 		return tasks;
 	}
@@ -144,7 +143,7 @@ class AlgorithmsStore {
 
 	}
 
-	Dijkstra(cy) {
+	static Dijkstra(cy) {
 		const selected = cy.$(':selected');
 		let rootSelected = selected.length === 1 && selected[0].isNode();
 		if (!rootSelected) {
@@ -173,7 +172,7 @@ class AlgorithmsStore {
 		messager.send(msgTypes.showMessageBox, 'Dijkstra matrix', `Matrix:\n${table}`);
 	}
 
-	GraphAddition(cy) {
+	static GraphAddition(cy) {
 		const nodes = cy.nodes();
 		const edges = cy.edges();
 		const actionList = [];
@@ -211,11 +210,11 @@ class AlgorithmsStore {
 		messager.send(msgTypes.graphURDo, 'batch', actionList);
 	}
 
-	GraphPlanarity(cy) {
+	static GraphPlanarity(cy) {
 
 	}
 
-	GraphConnectivity(cy) {
+	static GraphConnectivity(cy) {
 		console.log('graph connectivity');
 		const firstNode = cy.nodes()[0];
 
@@ -263,7 +262,7 @@ class AlgorithmsStore {
 		}
 	}
 
-	ColoringGraph(cy) {
+	static ColoringGraph(cy) {
 		const nodes = cy.nodes();
 
 		const edgesCounter = new Map();
@@ -316,7 +315,7 @@ class AlgorithmsStore {
 		}
 	}
 
-	MinimumSpanningTree(cy) {
+	static MinimumSpanningTree(cy) {
 		const edges = cy.edges();
 		const nodes = cy.nodes();
 		const edgesCounter = new Map();

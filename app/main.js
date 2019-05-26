@@ -289,6 +289,12 @@ var Graph = function (_Component) {
 		_rendererMessager.messager.on(_rendererMessager.msgTypes.graphSetAdjacency, function (srcNodeId, tgtNodeId, valueTo, valueFrom) {
 			return _this.editAdjacency(srcNodeId, tgtNodeId, valueTo, valueFrom);
 		});
+		_rendererMessager.messager.on(_rendererMessager.msgTypes.graphGetNextId, function (callback) {
+			return callback(++_this.state.lastId);
+		});
+		_rendererMessager.messager.on(_rendererMessager.msgTypes.graphURDo, function (name, param) {
+			return _this.ur.do(name, param);
+		});
 		return _this;
 	}
 
@@ -695,13 +701,13 @@ var Graph = function (_Component) {
 				};
 
 				var flipDirection = function flipDirection(event) {
-					_this5.ur.do("move", {
-						eles: edge,
-						location: {
-							source: edge.data().target,
-							target: edge.data().source
-						}
-					});
+					_this5.ur.do("batch", [{
+						name: 'changeData',
+						param: { elem: edge, key: 'source', value: edge.data('target') }
+					}, {
+						name: 'changeData',
+						param: { elem: edge, key: 'target', value: edge.data('source') }
+					}]);
 				};
 
 				var toggleArrow = function toggleArrow(event) {
@@ -1535,6 +1541,8 @@ var msgTypes = exports.msgTypes = {
 
 	// components/graph
 	graphSetAdjacency: "graph-set-adjacency", // srcNodeIdx, tgtNodeIdx, valueTo, valueFrom
+	graphGetNextId: "graph-get-next-id", // callback (id) => void
+	graphURDo: "graph-ur-do", // name, param
 
 	// components/toolbar
 	toolbarSetMessage: "toolbar-set-message", // msg
@@ -1597,10 +1605,11 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 
 			tasks.set(_enums.TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
 			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
-			tasks.set(_enums.TaskTypeEnum.WeightRadiusDiameterPower, alg.WeightRadiusDiameterPower);
+			tasks.set(_enums.TaskTypeEnum.WeightRadiusDiameterPower, AlgorithmsStore.WeightRadiusDiameterPower);
 			tasks.set(_enums.TaskTypeEnum.Dijkstra, alg.Dijkstra);
 			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
 			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
+			tasks.set(_enums.TaskTypeEnum.GraphAddition, alg.GraphAddition);
 
 			return tasks;
 		}
@@ -1614,51 +1623,6 @@ var AlgorithmsStore = function () {
 	}
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
-		key: "WeightRadiusDiameterPower",
-		value: function WeightRadiusDiameterPower(cy) {
-			var radius = -1;
-			var diameter = 0;
-			var degreeVector = [];
-			var nodeWeightVector = [];
-
-			var pathLength = 1;
-
-			var nodes = cy.nodes();
-
-			for (var i = 0; i < nodes.length; ++i) {
-				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, nodes[i]);
-				var biggestValue = 0;
-				for (var j = 0; j < dijkstraResult.length; ++j) {
-					if (biggestValue < dijkstraResult[j][pathLength]) {
-						biggestValue = dijkstraResult[j][pathLength];
-					}
-				}
-				nodeWeightVector.push([nodes[i], biggestValue]);
-
-				if (diameter < biggestValue) {
-					diameter = biggestValue;
-				}
-
-				if (radius > biggestValue || radius === -1) {
-					radius = biggestValue;
-				}
-
-				degreeVector.push([nodes[i], (0, _algorithmMethods.nodeDegree)(nodes[i])]);
-			}
-
-			var weightVecText = (0, _algorithmMethods.generateVectorText)(nodeWeightVector, 'Node');
-			var degreeVecText = (0, _algorithmMethods.generateVectorText)(degreeVector, 'Node');
-
-			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Radius, Diameter, Weight, Degree', "Radius: " + radius + "\nDiameter: " + diameter + "\n\nWeight vector:\n" + weightVecText + "\nDegree vector:\n" + degreeVecText);
-
-			return {
-				nodeWeightVector: nodeWeightVector,
-				degreeVector: degreeVector,
-				radius: radius,
-				diameter: diameter
-			};
-		}
-	}, {
 		key: "BestFirstSearch",
 		value: function BestFirstSearch(cy) {}
 	}, {
@@ -1690,6 +1654,49 @@ var AlgorithmsStore = function () {
 			var table = (0, _algorithmMethods.generateTable)(matrix, 5);
 
 			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Dijkstra matrix', "Matrix:\n" + table);
+		}
+	}, {
+		key: "GraphAddition",
+		value: function GraphAddition(cy) {
+			var nodes = cy.nodes();
+			var edges = cy.edges();
+			var actionList = [];
+			var usedNodes = cy.collection();
+			nodes.forEach(function (srcNode) {
+				var unboundNodes = (0, _algorithmMethods.nonIncidentNodes)(srcNode).difference(usedNodes).difference(srcNode);
+				unboundNodes.forEach(function (tgtNode) {
+					var edgeId = -1;
+					_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextId, function (id) {
+						return edgeId = id;
+					});
+					actionList.push({
+						name: 'add',
+						param: {
+							group: 'edges',
+							data: {
+								id: edgeId,
+								source: srcNode.data('id'),
+								target: tgtNode.data('id'),
+								weight: 1,
+								oriented: false
+							}
+						}
+					});
+				});
+				usedNodes.merge(srcNode);
+			});
+
+			if (actionList.length === 0) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Graph addition', 'Graph is already full!');
+				return;
+			}
+
+			// Undirect all directed edges
+			edges.filter('[?oriented]').forEach(function (edge) {
+				return actionList.push({ name: 'changeData', param: { elem: edge, key: 'oriented', value: false } });
+			});
+
+			_rendererMessager.messager.send(_rendererMessager.msgTypes.graphURDo, 'batch', actionList);
 		}
 	}, {
 		key: "GraphConnectivity",
@@ -1804,6 +1811,51 @@ var AlgorithmsStore = function () {
 
 			return result.length - 1;
 		}
+	}, {
+		key: "WeightRadiusDiameterPower",
+		value: function WeightRadiusDiameterPower(cy) {
+			var radius = -1;
+			var diameter = 0;
+			var degreeVector = [];
+			var nodeWeightVector = [];
+
+			var pathLength = 1;
+
+			var nodes = cy.nodes();
+
+			for (var i = 0; i < nodes.length; ++i) {
+				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, nodes[i]);
+				var biggestValue = 0;
+				for (var j = 0; j < dijkstraResult.length; ++j) {
+					if (biggestValue < dijkstraResult[j][pathLength]) {
+						biggestValue = dijkstraResult[j][pathLength];
+					}
+				}
+				nodeWeightVector.push([nodes[i], biggestValue]);
+
+				if (diameter < biggestValue) {
+					diameter = biggestValue;
+				}
+
+				if (radius > biggestValue || radius === -1) {
+					radius = biggestValue;
+				}
+
+				degreeVector.push([nodes[i], (0, _algorithmMethods.nodeDegree)(nodes[i])]);
+			}
+
+			var weightVecText = (0, _algorithmMethods.generateVectorText)(nodeWeightVector, 'Node');
+			var degreeVecText = (0, _algorithmMethods.generateVectorText)(degreeVector, 'Node');
+
+			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Radius, Diameter, Weight, Degree', "Radius: " + radius + "\nDiameter: " + diameter + "\n\nWeight vector:\n" + weightVecText + "\nDegree vector:\n" + degreeVecText);
+
+			return {
+				nodeWeightVector: nodeWeightVector,
+				degreeVector: degreeVector,
+				radius: radius,
+				diameter: diameter
+			};
+		}
 	}]);
 	return AlgorithmsStore;
 }();
@@ -1825,6 +1877,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.dijkstra = dijkstra;
 exports.nodeDegree = nodeDegree;
+exports.nonIncidentNodes = nonIncidentNodes;
 exports.generateTable = generateTable;
 exports.generateVectorText = generateVectorText;
 function dijkstra(cy, rootNode) {
@@ -1891,6 +1944,12 @@ function nodeDegree(node) {
 	var undirectedLoops = node.neighborhood("edge[source=\"" + node.data('id') + "\"][target=\"" + node.data('id') + "\"][!oriented]").length * 2;
 
 	return outgoingEdges + directedLoops + undirectedLoops;
+}
+
+function nonIncidentNodes(node) {
+	var allNodes = node.cy().nodes();
+	var incidentNodes = node.neighborhood('node');
+	return allNodes.difference(incidentNodes);
 }
 
 function generateTable(matrix, colWidth) {

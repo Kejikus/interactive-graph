@@ -63,6 +63,8 @@ export default class Graph extends Component {
 		messager.on(msgTypes.graphSetAdjacency, (srcNodeId, tgtNodeId, valueTo, valueFrom) => {
 			return this.editAdjacency(srcNodeId, tgtNodeId, valueTo, valueFrom);
 		});
+		messager.on(msgTypes.graphGetNextId, (callback) => callback(++this.state.lastId));
+		messager.on(msgTypes.graphURDo, (name, param) => this.ur.do(name, param));
 	}
 
 	componentDidMount() {
@@ -442,13 +444,16 @@ export default class Graph extends Component {
 			};
 
 			const flipDirection = (event) => {
-				this.ur.do("move", {
-					eles: edge,
-					location: {
-						source: edge.data().target,
-						target: edge.data().source
+				this.ur.do("batch", [
+					{
+						name: 'changeData',
+						param: {elem: edge, key: 'source', value: edge.data('target')}
+					},
+					{
+						name: 'changeData',
+						param: {elem: edge, key: 'target', value: edge.data('source')}
 					}
-				});
+				]);
 			};
 
 			const toggleArrow = (event) => {

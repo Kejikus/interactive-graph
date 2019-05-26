@@ -362,24 +362,29 @@ exports.default = {
 		label: "Theory of graph tasks",
 		type: "submenu",
 		submenu: [{
-			label: 'BreadthFirstSearch',
+			label: 'Breadth First Search',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.BreadthFirstSearch);
 			}
 		}, {
-			label: 'Dijkstra',
+			label: 'Dijkstra algorithm',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Dijkstra);
 			}
 		}, {
-			label: 'WeightRadiusDiameterPower',
+			label: 'Weight, Radius, Diameter, Power',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.WeightRadiusDiameterPower);
 			}
 		}, {
-			label: 'GraphConnectivity',
+			label: 'Graph Connectivity',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphConnectivity);
+			}
+		}, {
+			label: 'Add graph to full',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphAddition);
 			}
 		}]
 	}, {

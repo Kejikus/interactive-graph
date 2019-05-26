@@ -1,6 +1,6 @@
 import { TaskTypeEnum } from '../const/enums';
 import {messager, msgTypes} from "../rendererMessager";
-import {dijkstra, generateTable, generateVectorText, nodeDegree} from "./tools/algorithmMethods";
+import {dijkstra, generateTable, generateVectorText, nodeDegree, nonIncidentNodes} from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
 	static create() {
@@ -9,10 +9,11 @@ export class InitAlgorithms {
 
 		tasks.set(TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
 		tasks.set(TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
-		tasks.set(TaskTypeEnum.WeightRadiusDiameterPower, alg.WeightRadiusDiameterPower);
+		tasks.set(TaskTypeEnum.WeightRadiusDiameterPower, AlgorithmsStore.WeightRadiusDiameterPower);
 		tasks.set(TaskTypeEnum.Dijkstra, alg.Dijkstra);
 		tasks.set(TaskTypeEnum.AStar, alg.AStar);
 		tasks.set(TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
+		tasks.set(TaskTypeEnum.GraphAddition, alg.GraphAddition);
 
 		return tasks;
 	}
@@ -80,7 +81,7 @@ class AlgorithmsStore {
 		return result.length - 1;
 	}
 
-	WeightRadiusDiameterPower(cy) {
+	static WeightRadiusDiameterPower(cy) {
 		let radius = -1;
 		let diameter = 0;
 		const degreeVector = [];
@@ -161,6 +162,44 @@ class AlgorithmsStore {
 		const table = generateTable(matrix, 5);
 
 		messager.send(msgTypes.showMessageBox, 'Dijkstra matrix', `Matrix:\n${table}`);
+	}
+
+	GraphAddition(cy) {
+		const nodes = cy.nodes();
+		const edges = cy.edges();
+		const actionList = [];
+		const usedNodes = cy.collection();
+		nodes.forEach(srcNode => {
+			const unboundNodes = nonIncidentNodes(srcNode).difference(usedNodes).difference(srcNode);
+			unboundNodes.forEach(tgtNode => {
+				let edgeId = -1;
+				messager.send(msgTypes.graphGetNextId, id => edgeId = id);
+				actionList.push({
+					name: 'add',
+					param: {
+						group: 'edges',
+						data: {
+							id: edgeId,
+							source: srcNode.data('id'),
+							target: tgtNode.data('id'),
+							weight: 1,
+							oriented: false
+						}
+					}
+				});
+			});
+			usedNodes.merge(srcNode);
+		});
+
+		if (actionList.length === 0) {
+			messager.send(msgTypes.showMessageBox, 'Graph addition', 'Graph is already full!');
+			return;
+		}
+
+		// Undirect all directed edges
+		edges.filter('[?oriented]').forEach(edge => actionList.push({name: 'changeData', param: {elem: edge, key: 'oriented', value: false}}));
+
+		messager.send(msgTypes.graphURDo, 'batch', actionList);
 	}
 
 	GraphConnectivity(cy) {

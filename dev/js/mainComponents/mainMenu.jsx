@@ -79,21 +79,25 @@ export default {
 			type: "submenu",
 			submenu: [
 				{
-					label: 'BreadthFirstSearch',
+					label: 'Breadth First Search',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BreadthFirstSearch),
 				},
 				{
-					label: 'Dijkstra',
+					label: 'Dijkstra algorithm',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Dijkstra),
 				},
 				{
-					label: 'WeightRadiusDiameterPower',
+					label: 'Weight, Radius, Diameter, Power',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.WeightRadiusDiameterPower),
 				},
 				{
-					label: 'GraphConnectivity',
+					label: 'Graph Connectivity',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphConnectivity),
 				},
+				{
+					label: 'Add graph to full',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphAddition),
+				}
 			]
 		},
 		{

@@ -15,6 +15,8 @@ export const msgTypes = {
 
 	// components/graph
 	graphSetAdjacency: "graph-set-adjacency", // srcNodeIdx, tgtNodeIdx, valueTo, valueFrom
+	graphGetNextId: "graph-get-next-id", // callback (id) => void
+	graphURDo: "graph-ur-do", // name, param
 
 	// components/toolbar
 	toolbarSetMessage: "toolbar-set-message", // msg

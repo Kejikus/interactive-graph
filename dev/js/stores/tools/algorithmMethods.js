@@ -37,6 +37,14 @@ export function dijkstra(cy, rootNode) {
 	return pathLengthVector;
 }
 
+export function nodeDegree(node) {
+	const outgoingEdges = node.neighborhood('edge').difference(`[source="${node.data('id')}"][target!="${node.data('id')}"][?oriented]`).length;
+	const directedLoops = node.neighborhood(`edge[source="${node.data('id')}"][target="${node.data('id')}"][?oriented]`).length;
+	const undirectedLoops = node.neighborhood(`edge[source="${node.data('id')}"][target="${node.data('id')}"][!oriented]`).length * 2;
+
+	return outgoingEdges + directedLoops + undirectedLoops;
+}
+
 export function generateTable(matrix, colWidth) {
 	// Matrix: Map of nodes to ints
 	// [[<node>, <int>], [<node>, <int>], ...]

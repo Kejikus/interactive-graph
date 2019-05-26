@@ -16,6 +16,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.GraphAddition, alg.GraphAddition);
 		tasks.set(TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
 		tasks.set(TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
+		tasks.set(TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree());
 
 		return tasks;
 	}
@@ -285,7 +286,70 @@ class AlgorithmsStore {
 				}
 			}
 			colored.merge(needToColor);
-			needToColor.addClass(`color-${index++}`);
+			const colors = [
+				'#f44336',
+				'#9C27B0',
+				'#673AB7',
+				'#3F51B5',
+				'#2196F3',
+				'#009688',
+				'#4CAF50',
+				'#CDDC39',
+				'#FFEB3B',
+				'#FF9800',
+			];
+
+			if (index < colors.length) {
+				const color = colors[index++];
+				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
+			}
+			else {
+				const color = getRandomColor();
+				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
+			}
 		}
 	}
+
+	MinimumSpanningTree(cy) {
+		const edges = cy.edges();
+		const nodes = cy.nodes();
+		const edgesCounter = new Map();
+		for (let i = 0; i < edges.length; ++i) {
+			edgesCounter.set(edges[i], edges[i].data().weight);
+		}
+		const sortMap = new Map([...edgesCounter.entries()].sort((a, b) => b[1] - a[1]));
+		const k = getArrayOfKeysFromMap(sortMap);
+		const keys = k.reverse();
+		let underTree = [];
+		for (let i = 0; i < nodes.length; ++i) {
+			underTree.push([nodes[i]]);
+		}
+
+		const resultEdges = cy.collection();
+		for (let i = 0; i < keys.length; ++i) {
+			let firstIndex = 0;
+			let secondIndex = 0;
+			for (let j = 0; j < underTree.length; ++j) {
+				const first = keys[i].source();
+				const second = keys[i].target();
+				if (underTree[j].includes(first)) {
+					firstIndex = j;
+				}
+				if (underTree[j].includes(second)) {
+					secondIndex = j;
+				}
+			}
+
+			if (firstIndex !== secondIndex) {
+				resultEdges.merge(keys[i]);
+				for (let i = 0; i < underTree[secondIndex].length; ++i) {
+					underTree[firstIndex].push(underTree[secondIndex][i]);
+				}
+				underTree.splice(secondIndex, 1);
+			}
+		}
+		resultEdges.style('background-gradient-stop-colors', `white white red red`);
+		resultEdges.style('line-color', 'red');
+	}
+
 }

@@ -1623,7 +1623,8 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 			tasks.set(_enums.TaskTypeEnum.GraphAddition, alg.GraphAddition);
 			tasks.set(_enums.TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
-			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree);
+			tasks.set(_enums.TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
+			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree());
 
 			return tasks;
 		}
@@ -1638,9 +1639,7 @@ var AlgorithmsStore = function () {
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
 		key: "BestFirstSearch",
-		value: function BestFirstSearch(cy) {
-			// coming soon..
-		}
+		value: function BestFirstSearch(cy) {}
 	}, {
 		key: "AStar",
 		value: function AStar(cy) {}
@@ -1715,6 +1714,9 @@ var AlgorithmsStore = function () {
 			_rendererMessager.messager.send(_rendererMessager.msgTypes.graphURDo, 'batch', actionList);
 		}
 	}, {
+		key: "GraphPlanarity",
+		value: function GraphPlanarity(cy) {}
+	}, {
 		key: "GraphConnectivity",
 		value: function GraphConnectivity(cy) {
 			console.log('graph connectivity');
@@ -1769,6 +1771,7 @@ var AlgorithmsStore = function () {
 			var nodes = cy.nodes();
 
 			var edgesCounter = new _map2.default();
+
 			for (var i = 0; i < nodes.length; ++i) {
 				edgesCounter.set(nodes[i], nodes[i].neighborhood('edge').length);
 			}
@@ -1776,9 +1779,12 @@ var AlgorithmsStore = function () {
 				return b[1] - a[1];
 			}));
 
-			var index = 0;
+			var index = 1;
 			var colored = cy.collection();
-			var keys = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
+			var keys = [];
+			sortMap.forEach(function (value, key) {
+				keys.push(key);
+			});
 
 			for (var _i = 0; _i < keys.length; ++_i) {
 				var elem = keys[_i];
@@ -1792,15 +1798,13 @@ var AlgorithmsStore = function () {
 					}
 				}
 				colored.merge(needToColor);
-
 				var colors = ['#f44336', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#009688', '#4CAF50', '#CDDC39', '#FFEB3B', '#FF9800'];
 
 				if (index < colors.length) {
-					// needToColor.addClass(`color-${index++}`);
 					var color = colors[index++];
 					needToColor.style('background-gradient-stop-colors', "white white " + color + " " + color);
 				} else {
-					var _color = (0, _algorithmMethods.getRandomColor)();
+					var _color = getRandomColor();
 					needToColor.style('background-gradient-stop-colors', "white white " + _color + " " + _color);
 				}
 			}
@@ -1812,17 +1816,13 @@ var AlgorithmsStore = function () {
 			var nodes = cy.nodes();
 			var edgesCounter = new _map2.default();
 			for (var i = 0; i < edges.length; ++i) {
-				edgesCounter.set(edges[i], edges[i].weight);
+				edgesCounter.set(edges[i], edges[i].data().weight);
 			}
 			var sortMap = new _map2.default([].concat((0, _toConsumableArray3.default)(edgesCounter.entries())).sort(function (a, b) {
 				return b[1] - a[1];
 			}));
-			var k = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
+			var k = getArrayOfKeysFromMap(sortMap);
 			var keys = k.reverse();
-			console.log('keys: ', keys);
-			keys.forEach(function (key) {
-				return console.log(key.weight);
-			});
 			var underTree = [];
 			for (var _i2 = 0; _i2 < nodes.length; ++_i2) {
 				underTree.push([nodes[_i2]]);
@@ -1832,13 +1832,9 @@ var AlgorithmsStore = function () {
 			for (var _i3 = 0; _i3 < keys.length; ++_i3) {
 				var firstIndex = 0;
 				var secondIndex = 0;
-				// debugger;
 				for (var j = 0; j < underTree.length; ++j) {
 					var first = keys[_i3].source();
 					var second = keys[_i3].target();
-					// if (underTree[j].include(first) && underTree[j].include(second)) {
-					// 	flag = false;
-					// }
 					if (underTree[j].includes(first)) {
 						firstIndex = j;
 					}
@@ -1848,17 +1844,15 @@ var AlgorithmsStore = function () {
 				}
 
 				if (firstIndex !== secondIndex) {
-					// debugger;
 					resultEdges.merge(keys[_i3]);
 					for (var _i4 = 0; _i4 < underTree[secondIndex].length; ++_i4) {
 						underTree[firstIndex].push(underTree[secondIndex][_i4]);
 					}
-					// underTree[firstIndex].concat(underTree[secondIndex]);
 					underTree.splice(secondIndex, 1);
 				}
 			}
-			console.log('edges: ', resultEdges);
-			resultEdges.addClass('highlight');
+			resultEdges.style('background-gradient-stop-colors', "white white red red");
+			resultEdges.style('line-color', 'red');
 		}
 	}], [{
 		key: "BreadthFirstSearch",
@@ -1917,11 +1911,10 @@ var AlgorithmsStore = function () {
 				result_collection.merge(short_edge);
 			}
 
-			result_collection.style('background-gradient-stop-colors', "white white red red");
-			result_collection.style('line-color', 'red');
+			result_collection.addClass('highlight');
 
 			console.log('short path: ', result.length - 1);
-			// messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
+			//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
 
 			return result.length - 1;
 		}
@@ -2130,7 +2123,7 @@ function generateVectorText(vector, prependText) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n");
 
 /***/ }),
 

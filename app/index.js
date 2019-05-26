@@ -372,6 +372,11 @@ exports.default = {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Dijkstra);
 			}
 		}, {
+			label: 'WeightRadiusDiameterPower',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.WeightRadiusDiameterPower);
+			}
+		}, {
 			label: 'GraphConnectivity',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphConnectivity);

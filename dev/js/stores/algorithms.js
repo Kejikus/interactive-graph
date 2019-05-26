@@ -9,6 +9,7 @@ export class InitAlgorithms {
 
 		tasks.set(TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
 		tasks.set(TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
+		tasks.set(TaskTypeEnum.WeightRadiusDiameterPower, alg.WeightRadiusDiameterPower);
 		tasks.set(TaskTypeEnum.Dijkstra, alg.Dijkstra);
 		tasks.set(TaskTypeEnum.AStar, alg.AStar);
 		tasks.set(TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
@@ -80,6 +81,31 @@ class AlgorithmsStore {
 	}
 
 	WeightRadiusDiameterPower(cy) {
+
+		let radius = -1;
+		let diameter = 0;
+		const vectorDegree = [];
+
+		const node = 0;
+		const pathLength = 1;
+
+		for (let i = 0; i < cy.nodes().length; ++i) {
+			const dijkstraResult = dijkstra(cy, cy.nodes()[i]);
+			let biggestValue = 0;
+			for (let j = 0; j < dijkstraResult.length; ++j) {
+				if (biggestValue < dijkstraResult[j][pathLength]) {
+					biggestValue = dijkstraResult[j][pathLength];
+				}
+			}
+
+			if (diameter < biggestValue) {
+				diameter = biggestValue;
+			}
+
+			if (radius > biggestValue || radius === -1) {
+				radius = biggestValue;
+			}
+		}
 
 	}
 

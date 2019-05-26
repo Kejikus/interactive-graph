@@ -1597,8 +1597,10 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 
 			tasks.set(_enums.TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
 			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
+			tasks.set(_enums.TaskTypeEnum.WeightRadiusDiameterPower, alg.WeightRadiusDiameterPower);
 			tasks.set(_enums.TaskTypeEnum.Dijkstra, alg.Dijkstra);
 			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
+			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 
 			return tasks;
 		}
@@ -1613,7 +1615,33 @@ var AlgorithmsStore = function () {
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
 		key: "WeightRadiusDiameterPower",
-		value: function WeightRadiusDiameterPower(cy) {}
+		value: function WeightRadiusDiameterPower(cy) {
+
+			var radius = -1;
+			var diameter = 0;
+			var vectorDegree = [];
+
+			var node = 0;
+			var pathLength = 1;
+
+			for (var i = 0; i < cy.nodes().length; ++i) {
+				var dijkstraResult = (0, _algorithmMethods.dijkstra)(cy, cy.nodes()[i]);
+				var biggestValue = 0;
+				for (var j = 0; j < dijkstraResult.length; ++j) {
+					if (biggestValue < dijkstraResult[j][pathLength]) {
+						biggestValue = dijkstraResult[j][pathLength];
+					}
+				}
+
+				if (diameter < biggestValue) {
+					diameter = biggestValue;
+				}
+
+				if (radius > biggestValue || radius === -1) {
+					radius = biggestValue;
+				}
+			}
+		}
 	}, {
 		key: "BestFirstSearch",
 		value: function BestFirstSearch(cy) {}
@@ -1648,6 +1676,55 @@ var AlgorithmsStore = function () {
 			var table = (0, _algorithmMethods.generateTable)(matrix, 5);
 
 			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Dijkstra matrix', "Matrix:\n" + table);
+		}
+	}, {
+		key: "GraphConnectivity",
+		value: function GraphConnectivity(cy) {
+			console.log('graph connectivity');
+			var firstNode = cy.nodes()[0];
+
+			var frontier = [firstNode];
+			var visited = [firstNode];
+
+			var isConnected = false;
+
+			while (frontier.length > 0) {
+				var current = frontier.shift();
+				var nodes_neighbors = current.neighborhood().filter('node');
+				for (var i = 0; i < nodes_neighbors.length; ++i) {
+					var node = nodes_neighbors[i];
+					if (!visited.includes(node)) {
+						frontier.push(node);
+						visited.push(node);
+					}
+				}
+
+				if (visited.length === cy.nodes().length) {
+					isConnected = true;
+					break;
+				}
+			}
+
+			if (!isConnected) {
+				console.log('not connected');
+				return;
+			}
+
+			var isOrientedEdges = cy.edges().filter('[?oriented]').length !== 0;
+			if (isOrientedEdges) {
+				var isWeakConnectivity = false;
+				cy.nodes().forEach(function (node) {
+					var edges = node.neighborhood().filter('edge');
+					var orientedEdges = node.neighborhood().filter("edge[source=\"" + node.data('id') + "\"][?oriented]");
+					var result = edges.length === orientedEdges.length;
+					if (result) isWeakConnectivity = true;
+				});
+
+				var m = isWeakConnectivity ? 'weak connected' : 'strong connected';
+				console.log(m);
+			} else {
+				console.log('connected');
+			}
 		}
 	}], [{
 		key: "BreadthFirstSearch",
@@ -1813,7 +1890,7 @@ function generateTable(matrix, colWidth) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n\r\n.highlight {\r\n    line-color: red;\r\n    background-gradient-stop-colors: white white red red;\r\n}\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n\n.highlight {\n    line-color: red;\n    background-gradient-stop-colors: white white red red;\n}\n");
 
 /***/ }),
 

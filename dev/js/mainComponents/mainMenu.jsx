@@ -87,6 +87,10 @@ export default {
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Dijkstra),
 				},
 				{
+					label: 'WeightRadiusDiameterPower',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.WeightRadiusDiameterPower),
+				},
+				{
 					label: 'GraphConnectivity',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphConnectivity),
 				},

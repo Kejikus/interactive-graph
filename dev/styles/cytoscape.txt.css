@@ -63,33 +63,3 @@ edge[weight] {
 edge[?oriented] {
     target-arrow-shape: triangle;
 }
-
-.highlight {
-    line-color: red;
-    background-gradient-stop-colors: white white red red;
-}
-
-.color-1 {
-    line-color: #EFD9CE;
-    background-gradient-stop-colors: white white #EFD9CE #EFD9CE;
-}
-
-.color-2 {
-    line-color: #DEC0F1;
-    background-gradient-stop-colors: white white #DEC0F1 #DEC0F1;
-}
-
-.color-3 {
-    line-color: #B79CED;
-    background-gradient-stop-colors: white white #B79CED #B79CED;
-}
-
-.color-4 {
-    line-color: #957FEF;
-    background-gradient-stop-colors: white white #957FEF #957FEF;
-}
-
-.color-5 {
-    line-color: #7161EF;
-    background-gradient-stop-colors: white white #7161EF #7161EF;
-}

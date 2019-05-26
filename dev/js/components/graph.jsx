@@ -49,6 +49,9 @@ export default class Graph extends Component {
 				} else if (e.which === 'Z'.charCodeAt(0)) {
 					this.ur.undo();
 					e.preventDefault();
+				} else if (e.which === ' '.charCodeAt(0)) {
+					this.cy.$('*').removeStyle();
+					e.preventDefault();
 				}
 			} else {
 				if (e.which === 46) { // Delete
@@ -96,14 +99,14 @@ export default class Graph extends Component {
 		this.cy.style().fromJson(concatStyle);
 
 		// Style switches for selecting nodes
-		this.cy.on('select', 'node', event => {
-			let node = event.target;
-			node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).addClass('node-selected');
-		});
-		this.cy.on('unselect', 'node', event => {
-			let node = event.target;
-			node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).removeClass('node-selected');
-		});
+		// this.cy.on('select', 'node', event => {
+		// 	let node = event.target;
+		// 	node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).addClass('node-selected');
+		// });
+		// this.cy.on('unselect', 'node', event => {
+		// 	let node = event.target;
+		// 	node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).removeClass('node-selected');
+		// });
 
 		this.cy.on('select unselect', '*', event => {
 			if (this.cy.$('edge:selected').length === 1 && this.cy.$(':selected').length === 1 && !this.state.addEdgeButton) {
@@ -117,12 +120,17 @@ export default class Graph extends Component {
 		});
 
 		// Adjacency matrix recalculation trigger
+		// And style override remove trigger
 		this.cy.on('add data move remove', () => {
 			messager.send(
 				msgTypes.matrixSetData,
 				this.cy.nodes().difference('[^nodeIdx]').jsons(),
 				this.cy.edges().jsons()
 			);
+		});
+
+		this.cy.on('add move remove select', () => {
+			this.cy.$('edge, node[nodeIdx]').removeStyle();
 		});
 
 		// const recalculateNodeWeight = node => {

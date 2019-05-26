@@ -274,6 +274,9 @@ var Graph = function (_Component) {
 				} else if (e.which === 'Z'.charCodeAt(0)) {
 					_this.ur.undo();
 					e.preventDefault();
+				} else if (e.which === ' '.charCodeAt(0)) {
+					_this.cy.$('*').removeStyle();
+					e.preventDefault();
 				}
 			} else {
 				if (e.which === 46) {
@@ -329,14 +332,14 @@ var Graph = function (_Component) {
 			this.cy.style().fromJson(concatStyle);
 
 			// Style switches for selecting nodes
-			this.cy.on('select', 'node', function (event) {
-				var node = event.target;
-				node.cy().$('edge[source="' + node.id() + '"], edge[target="' + node.id() + '"][!oriented]').addClass('node-selected');
-			});
-			this.cy.on('unselect', 'node', function (event) {
-				var node = event.target;
-				node.cy().$('edge[source="' + node.id() + '"], edge[target="' + node.id() + '"][!oriented]').removeClass('node-selected');
-			});
+			// this.cy.on('select', 'node', event => {
+			// 	let node = event.target;
+			// 	node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).addClass('node-selected');
+			// });
+			// this.cy.on('unselect', 'node', event => {
+			// 	let node = event.target;
+			// 	node.cy().$(`edge[source="${node.id()}"], edge[target="${node.id()}"][!oriented]`).removeClass('node-selected');
+			// });
 
 			this.cy.on('select unselect', '*', function (event) {
 				if (_this2.cy.$('edge:selected').length === 1 && _this2.cy.$(':selected').length === 1 && !_this2.state.addEdgeButton) {
@@ -352,8 +355,13 @@ var Graph = function (_Component) {
 			});
 
 			// Adjacency matrix recalculation trigger
+			// And style override remove trigger
 			this.cy.on('add data move remove', function () {
 				_rendererMessager.messager.send(_rendererMessager.msgTypes.matrixSetData, _this2.cy.nodes().difference('[^nodeIdx]').jsons(), _this2.cy.edges().jsons());
+			});
+
+			this.cy.on('add move remove select', function () {
+				_this2.cy.$('edge, node[nodeIdx]').removeStyle();
 			});
 
 			// const recalculateNodeWeight = node => {
@@ -1766,7 +1774,7 @@ var AlgorithmsStore = function () {
 				return b[1] - a[1];
 			}));
 
-			var index = 1;
+			var index = 0;
 			var colored = cy.collection();
 			var keys = [];
 			sortMap.forEach(function (value, key) {
@@ -1785,7 +1793,17 @@ var AlgorithmsStore = function () {
 					}
 				}
 				colored.merge(needToColor);
-				needToColor.addClass("color-" + index++);
+
+				var colors = ['#f44336', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#009688', '#4CAF50', '#CDDC39', '#FFEB3B', '#FF9800'];
+
+				if (index < colors.length) {
+					// needToColor.addClass(`color-${index++}`);
+					var color = colors[index++];
+					needToColor.style('background-gradient-stop-colors', "white white " + color + " " + color);
+				} else {
+					var _color = (0, _algorithmMethods.getRandomColor)();
+					needToColor.style('background-gradient-stop-colors', "white white " + _color + " " + _color);
+				}
 			}
 		}
 	}], [{
@@ -1845,7 +1863,8 @@ var AlgorithmsStore = function () {
 				result_collection.merge(short_edge);
 			}
 
-			result_collection.addClass('highlight');
+			result_collection.style('background-gradient-stop-colors', "white white red red");
+			result_collection.style('line-color', 'red');
 
 			console.log('short path: ', result.length - 1);
 			// messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
@@ -1920,6 +1939,7 @@ exports.dijkstra = dijkstra;
 exports.nodeDegree = nodeDegree;
 exports.incidentNodes = incidentNodes;
 exports.nonIncidentNodes = nonIncidentNodes;
+exports.getRandomColor = getRandomColor;
 exports.generateTable = generateTable;
 exports.generateVectorText = generateVectorText;
 function dijkstra(cy, rootNode) {
@@ -1998,6 +2018,15 @@ function nonIncidentNodes(node) {
 	return allNodes.difference(incidentNodes);
 }
 
+function getRandomColor() {
+	var letters = '0123456789ABCDEF';
+	var color = '#';
+	for (var i = 0; i < 6; i++) {
+		color += letters[Math.floor(Math.random() * 16)];
+	}
+	return color;
+}
+
 function generateTable(matrix, colWidth) {
 	// Matrix: Map of nodes to ints
 	// [[<node>, <int>], [<node>, <int>], ...]
@@ -2037,7 +2066,7 @@ function generateVectorText(vector, prependText) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n\n.highlight {\n    line-color: red;\n    background-gradient-stop-colors: white white red red;\n}\n\n.color-1 {\n    line-color: #EFD9CE;\n    background-gradient-stop-colors: white white #EFD9CE #EFD9CE;\n}\n\n.color-2 {\n    line-color: #DEC0F1;\n    background-gradient-stop-colors: white white #DEC0F1 #DEC0F1;\n}\n\n.color-3 {\n    line-color: #B79CED;\n    background-gradient-stop-colors: white white #B79CED #B79CED;\n}\n\n.color-4 {\n    line-color: #957FEF;\n    background-gradient-stop-colors: white white #957FEF #957FEF;\n}\n\n.color-5 {\n    line-color: #7161EF;\n    background-gradient-stop-colors: white white #7161EF #7161EF;\n}\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n");
 
 /***/ }),
 

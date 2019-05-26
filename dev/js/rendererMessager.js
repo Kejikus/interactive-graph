@@ -16,10 +16,14 @@ export const msgTypes = {
 	// components/graph
 	graphSetAdjacency: "graph-set-adjacency", // srcNodeIdx, tgtNodeIdx, valueTo, valueFrom
 	graphGetNextId: "graph-get-next-id", // callback (id) => void
+	graphGetNextNodeIdx: "graph-get-next-node-idx", // callback (idx) => void
 	graphURDo: "graph-ur-do", // name, param
 
 	// components/toolbar
 	toolbarSetMessage: "toolbar-set-message", // msg
+
+	// components/sidebar
+	sidebarShowInput: "sidebar-show-input", // callback on input accept
 
 	// this
 	showMessageBox: "show-message-box", // title, msg

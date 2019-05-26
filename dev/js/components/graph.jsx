@@ -67,6 +67,7 @@ export default class Graph extends Component {
 			return this.editAdjacency(srcNodeId, tgtNodeId, valueTo, valueFrom);
 		});
 		messager.on(msgTypes.graphGetNextId, (callback) => callback(++this.state.lastId));
+		messager.on(msgTypes.graphGetNextNodeIdx, (callback) => callback(++this.state.lastNodeIdx));
 		messager.on(msgTypes.graphURDo, (name, param) => this.ur.do(name, param));
 	}
 

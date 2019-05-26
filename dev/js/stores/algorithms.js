@@ -23,6 +23,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.ColoringGraph, AlgorithmsStore.ColoringGraph);
 		tasks.set(TaskTypeEnum.GraphPlanarity, AlgorithmsStore.GraphPlanarity);
 		tasks.set(TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
+		tasks.set(TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
 
 		return tasks;
 	}
@@ -360,4 +361,78 @@ class AlgorithmsStore {
 		resultEdges.style('line-color', 'red');
 	}
 
+	static RecoverGraphFromVector(cy) {
+		messager.send(msgTypes.sidebarShowInput, 'Input space-separated numbers', (input) => {
+			if (input.match(/^(\d+\s*)*$/) === null) {
+				messager.send(msgTypes.showMessageBox, 'Input error', 'Input must be space-separated string of positive integer numbers');
+				return;
+			}
+
+			const degrees = input.split(/\s+/).map(item => Number(item)).sort((a, b) => b - a);
+
+			const actionList = [{name: 'remove', param: '*'}];
+			const nodeIds = [];
+			let history = '';
+
+			for (let i = 0; i < degrees.length; i++) {
+				let id = -1, nodeIdx = -1;
+				messager.send(msgTypes.graphGetNextId, i => id = i);
+				messager.send(msgTypes.graphGetNextNodeIdx, i => nodeIdx = i);
+
+				actionList.push({
+					name: 'add',
+					param: {
+						group: 'nodes',
+						data: {
+							id: id,
+							nodeIdx: nodeIdx
+						}
+					}
+				});
+				nodeIds.push(id);
+			}
+
+			history += `${degrees}\n`;
+
+			for (let srcIdx = 0; srcIdx < degrees.length; srcIdx++) {
+				let currentDegree = degrees[srcIdx];
+				if (currentDegree === 0)
+					break;
+				if (currentDegree > degrees.length) {
+					messager.send(msgTypes.showMessageBox, 'Input error', `Invalid degree ${currentDegree}`);
+					return;
+				}
+
+				for (let i = srcIdx + 1; i < currentDegree; i++) {
+					if (degrees[i] === 0) {
+						messager.send(msgTypes.showMessageBox, 'Input error', `Invalid degree vector, can't place all edges`);
+						return;
+					}
+					degrees[i]--;
+					let id = -1;
+					messager.send(msgTypes.graphGetNextId, i => id = i);
+					actionList.push({
+						name: 'add',
+						param: {
+							group: 'edges',
+							data: {
+								id: id,
+								source: nodeIds[srcIdx],
+								target: nodeIds[i],
+								weight: 1
+							}
+						}
+					});
+				}
+				degrees[srcIdx] = 0;
+				history += `${degrees}\n`;
+			}
+
+			actionList.push({name: 'layout', param: {name: 'circle'}});
+
+			messager.send(msgTypes.graphURDo, actionList);
+
+
+		});
+	}
 }

@@ -295,6 +295,9 @@ var Graph = function (_Component) {
 		_rendererMessager.messager.on(_rendererMessager.msgTypes.graphGetNextId, function (callback) {
 			return callback(++_this.state.lastId);
 		});
+		_rendererMessager.messager.on(_rendererMessager.msgTypes.graphGetNextNodeIdx, function (callback) {
+			return callback(++_this.state.lastNodeIdx);
+		});
 		_rendererMessager.messager.on(_rendererMessager.msgTypes.graphURDo, function (name, param) {
 			return _this.ur.do(name, param);
 		});
@@ -1049,6 +1052,8 @@ var _AlgorithmWrapper = __webpack_require__(/*! ./Tasks/AlgorithmWrapper */ "./d
 
 var _AlgorithmWrapper2 = _interopRequireDefault(_AlgorithmWrapper);
 
+var _rendererMessager = __webpack_require__(/*! ../rendererMessager */ "./dev/js/rendererMessager.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var SideBar = function (_Component) {
@@ -1056,16 +1061,48 @@ var SideBar = function (_Component) {
 
 	function SideBar(props) {
 		(0, _classCallCheck3.default)(this, SideBar);
-		return (0, _possibleConstructorReturn3.default)(this, (SideBar.__proto__ || (0, _getPrototypeOf2.default)(SideBar)).call(this, props));
+
+		var _this = (0, _possibleConstructorReturn3.default)(this, (SideBar.__proto__ || (0, _getPrototypeOf2.default)(SideBar)).call(this, props));
+
+		_this.state = {
+			showInput: false,
+			callback: null
+		};
+		_rendererMessager.messager.on(_rendererMessager.msgTypes.sidebarShowInput, function (placeholder, callback) {
+			_this.setState({ showInput: true, placeholder: placeholder, callback: callback });
+		});
+		return _this;
 	}
 
 	(0, _createClass3.default)(SideBar, [{
+		key: "onInputKeyUp",
+		value: function onInputKeyUp(event) {
+			if (event.which === 13) {
+				// Enter
+				this.state.callback(event.currentTarget.value);
+				this.setState({ showInput: false, placeholder: '', callback: null });
+			}
+		}
+	}, {
 		key: "render",
 		value: function render() {
+			var _this2 = this;
+
+			var input = this.state.showInput ? _react2.default.createElement(
+				"div",
+				{ className: "input-field" },
+				_react2.default.createElement("input", { type: "text",
+					placeholder: this.state.placeholder,
+					onKeyUp: function onKeyUp(e) {
+						return _this2.onInputKeyUp(e);
+					} })
+			) : '';
+
 			return _react2.default.createElement(
 				"div",
 				{ className: "side-bar card-panel" },
 				_react2.default.createElement(_matrix2.default, null),
+				input,
 				_react2.default.createElement(
 					"ul",
 					{ className: "hints" },
@@ -1550,10 +1587,14 @@ var msgTypes = exports.msgTypes = {
 	// components/graph
 	graphSetAdjacency: "graph-set-adjacency", // srcNodeIdx, tgtNodeIdx, valueTo, valueFrom
 	graphGetNextId: "graph-get-next-id", // callback (id) => void
+	graphGetNextNodeIdx: "graph-get-next-node-idx", // callback (idx) => void
 	graphURDo: "graph-ur-do", // name, param
 
 	// components/toolbar
 	toolbarSetMessage: "toolbar-set-message", // msg
+
+	// components/sidebar
+	sidebarShowInput: "sidebar-show-input", // callback on input accept
 
 	// this
 	showMessageBox: "show-message-box" // title, msg
@@ -1624,6 +1665,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.ColoringGraph, AlgorithmsStore.ColoringGraph);
 			tasks.set(_enums.TaskTypeEnum.GraphPlanarity, AlgorithmsStore.GraphPlanarity);
 			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
+			tasks.set(_enums.TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
 
 			return tasks;
 		}
@@ -1964,6 +2006,90 @@ var AlgorithmsStore = function () {
 			resultEdges.style('background-gradient-stop-colors', "white white red red");
 			resultEdges.style('line-color', 'red');
 		}
+	}, {
+		key: "RecoverGraphFromVector",
+		value: function RecoverGraphFromVector(cy) {
+			_rendererMessager.messager.send(_rendererMessager.msgTypes.sidebarShowInput, 'Input space-separated numbers', function (input) {
+				if (input.match(/^(\d+\s*)*$/) === null) {
+					_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', 'Input must be space-separated string of positive integer numbers');
+					return;
+				}
+
+				var degrees = input.split(/\s+/).map(function (item) {
+					return Number(item);
+				}).sort(function (a, b) {
+					return b - a;
+				});
+
+				var actionList = [{ name: 'remove', param: '*' }];
+				var nodeIds = [];
+				var history = '';
+
+				for (var i = 0; i < degrees.length; i++) {
+					var id = -1,
+					    nodeIdx = -1;
+					_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextId, function (i) {
+						return id = i;
+					});
+					_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextNodeIdx, function (i) {
+						return nodeIdx = i;
+					});
+
+					actionList.push({
+						name: 'add',
+						param: {
+							group: 'nodes',
+							data: {
+								id: id,
+								nodeIdx: nodeIdx
+							}
+						}
+					});
+					nodeIds.push(id);
+				}
+
+				history += degrees + "\n";
+
+				for (var srcIdx = 0; srcIdx < degrees.length; srcIdx++) {
+					var currentDegree = degrees[srcIdx];
+					if (currentDegree === 0) break;
+					if (currentDegree > degrees.length) {
+						_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', "Invalid degree " + currentDegree);
+						return;
+					}
+
+					for (var _i6 = srcIdx + 1; _i6 < currentDegree; _i6++) {
+						if (degrees[_i6] === 0) {
+							_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', "Invalid degree vector, can't place all edges");
+							return;
+						}
+						degrees[_i6]--;
+						var _id = -1;
+						_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextId, function (i) {
+							return _id = i;
+						});
+						actionList.push({
+							name: 'add',
+							param: {
+								group: 'edges',
+								data: {
+									id: _id,
+									source: nodeIds[srcIdx],
+									target: nodeIds[_i6],
+									weight: 1
+								}
+							}
+						});
+					}
+					degrees[srcIdx] = 0;
+					history += degrees + "\n";
+				}
+
+				actionList.push({ name: 'layout', param: { name: 'circle' } });
+
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.graphURDo, actionList);
+			});
+		}
 	}]);
 	return AlgorithmsStore;
 }();
@@ -2124,7 +2250,7 @@ function generateVectorText(vector, prependText) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n");
 
 /***/ }),
 

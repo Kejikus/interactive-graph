@@ -21,7 +21,6 @@ class AdjacencyMatrix extends Component {
 		};
 
 		messager.on(msgTypes.matrixSetData, (nodes, edges) => {
-			console.log(this);
 			this.setCollection(nodes, edges);
 			this.forceUpdate();
 		});

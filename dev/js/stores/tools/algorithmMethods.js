@@ -1,15 +1,18 @@
-export function dijkstra(cy, root) {
+export function dijkstra(cy, rootNode) {
 	const weight = (edge) => edge.data('weight');
-	const currentSum = ele => ele.scratch("_dijkstra_sum_weight") || Infinity;
+	const currentSum = ele => {
+		const sum = ele.scratch("_dijkstra_sum_weight");
+		return sum === undefined ? Infinity : sum;
+	};
 	const setSum = (ele, sum) => ele.scratch("_dijkstra_sum_weight", sum);
 
-	let currentNode = root;
-	setSum(root, 0);
+	let currentNode = rootNode;
+	setSum(rootNode, 0);
 	let visitedNodes = cy.collection();
 	for (;;) {
 		// Calculating new distances and ordering
-		const neighbourNodes = currentNode.neighborhood('node').difference(visitedNodes);
-		neighbourNodes.forEach(node => {
+		const neighborNodes = currentNode.neighborhood('node').difference(visitedNodes);
+		neighborNodes.forEach(node => {
 			const shortestEdge1 = currentNode.edgesWith(node)
 				.difference(`[target="${currentNode.data('id')}"][?oriented]`)
 				.min(weight).ele;
@@ -17,9 +20,9 @@ export function dijkstra(cy, root) {
 			setSum(node, Math.min(currentSum(node), newWeight));
 		});
 
-		if (neighbourNodes.length === 0) break;
+		if (neighborNodes.length === 0) break;
 
-		const nextNode = neighbourNodes.min(node => currentSum(node)).ele;
+		let nextNode = neighborNodes.min(node => currentSum(node)).ele;
 
 		visitedNodes.merge(currentNode);
 		currentNode = nextNode;
@@ -32,4 +35,25 @@ export function dijkstra(cy, root) {
 	cy.nodes().forEach(node => node.removeScratch("_dijkstra_sum_weight"));
 
 	return pathLengthVector;
+}
+
+export function generateTable(matrix, colWidth) {
+	// Matrix: Map of nodes to ints
+	// [[<node>, <int>], [<node>, <int>], ...]
+
+	let header = ''.padStart(colWidth);
+	matrix.forEach((_, node) => {
+		header += ' | ' + node.data('nodeIdx').toString().padStart(colWidth);
+	});
+
+	let rows = '';
+	matrix.forEach((row, node) => {
+		rows += node.data('nodeIdx').toString().padStart(colWidth);
+		row.forEach(pathLength => {
+			rows += ' | ' + `${pathLength}`.padStart(colWidth);
+		});
+		rows += '\n';
+	});
+
+	return `${header}\n${rows}`;
 }

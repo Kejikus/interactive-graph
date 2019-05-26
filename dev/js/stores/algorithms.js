@@ -1,6 +1,6 @@
 import { TaskTypeEnum } from '../const/enums';
 import {messager, msgTypes} from "../rendererMessager";
-import {dijkstra} from "./tools/algorithmMethods";
+import {dijkstra, generateTable} from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
 	static create() {
@@ -103,14 +103,20 @@ class AlgorithmsStore {
 		const matrix = new Map(
 			cy.nodes().map(currentRoot => {
 				let pathLengths = dijkstra(cy, currentRoot);
-				const textVector = pathLengths.reduce((text, value) => text.concat(`To ${value[0].data('nodeIdx')}: ${value[1]}\n`), '');
 
-				if (currentRoot === root)
+				if (currentRoot === root) {
+					const textVector = pathLengths.reduce((text, value) => text.concat(`To ${value[0].data('nodeIdx')}: ${value[1]}\n`), '');
+
 					messager.send(msgTypes.showMessageBox, 'Dijkstra vector',
 						`Path from root to all other nodes:\n${textVector}`);
+				}
 				return [currentRoot, new Map(pathLengths)];
 			})
 		);
+
+		const table = generateTable(matrix, 5);
+
+		messager.send(msgTypes.showMessageBox, 'Dijkstra matrix', `Matrix:\n${table}`);
 	}
 
 }

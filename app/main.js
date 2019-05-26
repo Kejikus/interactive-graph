@@ -844,7 +844,6 @@ var AdjacencyMatrix = function (_Component) {
 		};
 
 		_rendererMessager.messager.on(_rendererMessager.msgTypes.matrixSetData, function (nodes, edges) {
-			console.log(_this);
 			_this.setCollection(nodes, edges);
 			_this.forceUpdate();
 		});
@@ -1505,10 +1504,6 @@ var _events = __webpack_require__(/*! events */ "events");
 
 var _electron = __webpack_require__(/*! electron */ "electron");
 
-var _help = __webpack_require__(/*! ../text/help.txt */ "./dev/text/help.txt");
-
-var _help2 = _interopRequireDefault(_help);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Messager = function (_EventEmitter) {
@@ -1520,7 +1515,7 @@ var Messager = function (_EventEmitter) {
 	}
 
 	(0, _createClass3.default)(Messager, [{
-		key: "send",
+		key: 'send',
 		value: function send(messageType) {
 			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 				args[_key - 1] = arguments[_key];
@@ -1549,12 +1544,7 @@ var msgTypes = exports.msgTypes = {
 };
 
 messager.on(msgTypes.showMessageBox, function (title, msg) {
-	_electron.dialog.showMessageBox({
-		type: "none",
-		buttons: ["Close"],
-		title: title,
-		message: msg
-	}, function () {});
+	_electron.ipcRenderer.send('show-message-box', title, msg);
 });
 
 /***/ }),
@@ -1590,6 +1580,8 @@ var _enums = __webpack_require__(/*! ../const/enums */ "./dev/js/const/enums.js"
 
 var _rendererMessager = __webpack_require__(/*! ../rendererMessager */ "./dev/js/rendererMessager.js");
 
+var _algorithmMethods = __webpack_require__(/*! ./tools/algorithmMethods */ "./dev/js/stores/tools/algorithmMethods.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var InitAlgorithms = exports.InitAlgorithms = function () {
@@ -1598,7 +1590,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 	}
 
 	(0, _createClass3.default)(InitAlgorithms, null, [{
-		key: 'create',
+		key: "create",
 		value: function create() {
 			var tasks = new _map2.default();
 			var alg = new AlgorithmsStore();
@@ -1620,52 +1612,45 @@ var AlgorithmsStore = function () {
 	}
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
-		key: 'WeightRadiusDiameterPower',
+		key: "WeightRadiusDiameterPower",
 		value: function WeightRadiusDiameterPower(cy) {}
 	}, {
-		key: 'BestFirstSearch',
+		key: "BestFirstSearch",
 		value: function BestFirstSearch(cy) {}
 	}, {
-		key: 'AStar',
+		key: "AStar",
 		value: function AStar(cy) {}
 	}, {
-		key: 'Dijkstra',
+		key: "Dijkstra",
 		value: function Dijkstra(cy) {
 			var selected = cy.$(':selected');
-			if (selected.length !== 1 || !selected[0].isNode()) {
-				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Select one node and start algorithm again');
-				return;
+			var rootSelected = selected.length === 1 && selected[0].isNode();
+			if (!rootSelected) {
+				// messager.send(msgTypes.toolbarSetMessage, 'Select one node and start algorithm again');
+				// return;
+				selected.unselect();
 			}
 
-			var root = selected[0];
-			var weight = function weight(edge) {
-				return edge.data().weight;
-			};
+			var root = rootSelected ? selected[0] : null;
+			var matrix = new _map2.default(cy.nodes().map(function (currentRoot) {
+				var pathLengths = (0, _algorithmMethods.dijkstra)(cy, currentRoot);
 
-			var currentNode = root;
-			var visitedNodes = cy.collection();
-			for (;;) {
-				// Calculating new distances and ordering
-				var neighbourNodes = currentNode.neighborhood('node').difference(visitedNodes);
-				neighbourNodes.forEach(function (node) {
-					var shortestEdge1 = currentNode.edgesWith(node).difference('[target="' + currentNode.data().id + '"][?oriented]').min(function (ele) {
-						return ele.data().weight;
-					}).ele;
-					var newWeight = shortestEdge1.data().weight + (currentNode.scratch('_sum_weight') || 0);
-					node.scratch("_sum_weight", Math.min(node.scratch("_sum_weight"), newWeight));
-				});
-				var nextNode = neighbourNodes.min(function (node) {
-					return node.scratch("_sum_weight");
-				}).ele;
+				if (currentRoot === root) {
+					var textVector = pathLengths.reduce(function (text, value) {
+						return text.concat("To " + value[0].data('nodeIdx') + ": " + value[1] + "\n");
+					}, '');
 
-				if (neighbourNodes.length === 0) break;
+					_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Dijkstra vector', "Path from root to all other nodes:\n" + textVector);
+				}
+				return [currentRoot, new _map2.default(pathLengths)];
+			}));
 
-				visitedNodes.merge(currentNode);
-				currentNode = nextNode;
-			}
+			var table = (0, _algorithmMethods.generateTable)(matrix, 5);
+
+			_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Dijkstra matrix', "Matrix:\n" + table);
 		}
 	}], [{
-		key: 'BreadthFirstSearch',
+		key: "BreadthFirstSearch",
 		value: function BreadthFirstSearch(cy) {
 			// Validation
 			var selected = cy.$(':selected');
@@ -1734,6 +1719,91 @@ var AlgorithmsStore = function () {
 
 /***/ }),
 
+/***/ "./dev/js/stores/tools/algorithmMethods.js":
+/*!*************************************************!*\
+  !*** ./dev/js/stores/tools/algorithmMethods.js ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+exports.dijkstra = dijkstra;
+exports.generateTable = generateTable;
+function dijkstra(cy, rootNode) {
+	var weight = function weight(edge) {
+		return edge.data('weight');
+	};
+	var currentSum = function currentSum(ele) {
+		var sum = ele.scratch("_dijkstra_sum_weight");
+		return sum === undefined ? Infinity : sum;
+	};
+	var setSum = function setSum(ele, sum) {
+		return ele.scratch("_dijkstra_sum_weight", sum);
+	};
+
+	var currentNode = rootNode;
+	setSum(rootNode, 0);
+	var visitedNodes = cy.collection();
+	for (;;) {
+		// Calculating new distances and ordering
+		var neighborNodes = currentNode.neighborhood('node').difference(visitedNodes);
+		neighborNodes.forEach(function (node) {
+			var shortestEdge1 = currentNode.edgesWith(node).difference("[target=\"" + currentNode.data('id') + "\"][?oriented]").min(weight).ele;
+			var newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
+			setSum(node, Math.min(currentSum(node), newWeight));
+		});
+
+		if (neighborNodes.length === 0) break;
+
+		var nextNode = neighborNodes.min(function (node) {
+			return currentSum(node);
+		}).ele;
+
+		visitedNodes.merge(currentNode);
+		currentNode = nextNode;
+	}
+
+	var pathLengthVector = cy.nodes().sort(function (node1, node2) {
+		return node1.data('id') - node2.data('id');
+	}).map(function (node) {
+		return [node, currentSum(node)];
+	});
+
+	cy.nodes().forEach(function (node) {
+		return node.removeScratch("_dijkstra_sum_weight");
+	});
+
+	return pathLengthVector;
+}
+
+function generateTable(matrix, colWidth) {
+	// Matrix: Map of nodes to ints
+	// [[<node>, <int>], [<node>, <int>], ...]
+
+	var header = ''.padStart(colWidth);
+	matrix.forEach(function (_, node) {
+		header += ' | ' + node.data('nodeIdx').toString().padStart(colWidth);
+	});
+
+	var rows = '';
+	matrix.forEach(function (row, node) {
+		rows += node.data('nodeIdx').toString().padStart(colWidth);
+		row.forEach(function (pathLength) {
+			rows += ' | ' + ("" + pathLength).padStart(colWidth);
+		});
+		rows += '\n';
+	});
+
+	return header + "\n" + rows;
+}
+
+/***/ }),
+
 /***/ "./dev/styles/cytoscape.txt.css":
 /*!**************************************!*\
   !*** ./dev/styles/cytoscape.txt.css ***!
@@ -1743,7 +1813,7 @@ var AlgorithmsStore = function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n\n.highlight {\n    line-color: red;\n    background-gradient-stop-colors: white white red red;\n}\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n\r\n.highlight {\r\n    line-color: red;\r\n    background-gradient-stop-colors: white white red red;\r\n}\r\n");
 
 /***/ }),
 
@@ -1774,19 +1844,6 @@ var update = __webpack_require__(/*! ../../node_modules/style-loader/lib/addStyl
 if(content.locals) module.exports = content.locals;
 
 if(false) {}
-
-/***/ }),
-
-/***/ "./dev/text/help.txt":
-/*!***************************!*\
-  !*** ./dev/text/help.txt ***!
-  \***************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\n\nВ меню находятся следующие пункты:\n    “File” – пункт меню, в котором реализованы следующие возможности:\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\n        “Open” (Ctrl + O) – открывает файл с графом.\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\n            Любой файл может содержать комментарии, начинающиеся со знака %.\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\n            Также есть возможность сохранить граф как картинку.\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\n        “Exit” – выход из программы.\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\n    “About” – пункт меню “О программе”\n        “Help” (F1) – описание программы и ее возможностей.\n        “Authors” – имена разработчиков и команды поддержки.\n\nМатематическое представление графа, содержит следующие возможности:\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\n\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\n        Так же можно задать ориентированность ребра, установив галочку.\n        По умолчанию ребро не ориентировано, а вес равен 1.\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\n\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\n** - описание типов, находится в приложении.");
 
 /***/ }),
 

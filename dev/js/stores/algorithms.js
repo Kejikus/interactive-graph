@@ -1,13 +1,6 @@
 import { TaskTypeEnum } from '../const/enums';
 import {messager, msgTypes} from "../rendererMessager";
-import {
-	dijkstra,
-	generateTable,
-	generateVectorText,
-	getRandomColor,
-	nodeDegree,
-	nonIncidentNodes
-} from "./tools/algorithmMethods";
+import {dijkstra, generateTable, generateVectorText, nodeDegree, nonIncidentNodes} from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
 	static create() {
@@ -82,8 +75,7 @@ class AlgorithmsStore {
 			result_collection.merge(short_edge);
 		}
 
-		result_collection.style('background-gradient-stop-colors', `white white red red`);
-		result_collection.style('line-color', 'red');
+		result_collection.addClass('highlight');
 
 		console.log('short path: ', result.length - 1);
 		//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
@@ -274,7 +266,7 @@ class AlgorithmsStore {
 		}
 		const sortMap = new Map([...edgesCounter.entries()].sort((a, b) => b[1] - a[1]));
 
-		let index = 0;
+		let index = 1;
 		const colored = cy.collection();
 		const keys = [];
 		sortMap.forEach((value, key) => {
@@ -293,29 +285,7 @@ class AlgorithmsStore {
 				}
 			}
 			colored.merge(needToColor);
-
-			const colors = [
-				'#f44336',
-				'#9C27B0',
-				'#673AB7',
-				'#3F51B5',
-				'#2196F3',
-				'#009688',
-				'#4CAF50',
-				'#CDDC39',
-				'#FFEB3B',
-				'#FF9800',
-			];
-
-			if (index < colors.length) {
-				// needToColor.addClass(`color-${index++}`);
-				const color = colors[index++];
-				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
-			}
-			else {
-				const color = getRandomColor();
-				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
-			}
+			needToColor.addClass(`color-${index++}`);
 		}
 	}
 }

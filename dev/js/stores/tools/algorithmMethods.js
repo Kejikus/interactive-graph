@@ -41,6 +41,15 @@ export function dijkstra(cy, rootNode) {
 	return pathLengthVector;
 }
 
+export function getArrayOfKeysFromMap(map) {
+	const keys = [];
+	map.forEach((value, key) => {
+		keys.push(key);
+	});
+
+	return keys;
+}
+
 export function nodeDegree(node) {
 	const outgoingEdges = node.neighborhood('edge').difference(`[source="${node.data('id')}"][target!="${node.data('id')}"][?oriented]`).length;
 	const directedLoops = node.neighborhood(`edge[source="${node.data('id')}"][target="${node.data('id')}"][?oriented]`).length;

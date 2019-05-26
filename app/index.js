@@ -386,6 +386,16 @@ exports.default = {
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphConnectivity);
 			}
+		}, {
+			label: 'GraphAddition',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphAddition);
+			}
+		}, {
+			label: 'MinimumSpanningTree',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.MinimumSpanningTree);
+			}
 		}]
 	}, {
 		label: "About",

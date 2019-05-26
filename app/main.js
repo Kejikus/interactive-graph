@@ -1623,6 +1623,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 			tasks.set(_enums.TaskTypeEnum.GraphAddition, alg.GraphAddition);
 			tasks.set(_enums.TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
+			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, alg.MinimumSpanningTree);
 
 			return tasks;
 		}
@@ -1637,7 +1638,9 @@ var AlgorithmsStore = function () {
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
 		key: "BestFirstSearch",
-		value: function BestFirstSearch(cy) {}
+		value: function BestFirstSearch(cy) {
+			// coming soon..
+		}
 	}, {
 		key: "AStar",
 		value: function AStar(cy) {}
@@ -1766,7 +1769,6 @@ var AlgorithmsStore = function () {
 			var nodes = cy.nodes();
 
 			var edgesCounter = new _map2.default();
-
 			for (var i = 0; i < nodes.length; ++i) {
 				edgesCounter.set(nodes[i], nodes[i].neighborhood('edge').length);
 			}
@@ -1776,10 +1778,7 @@ var AlgorithmsStore = function () {
 
 			var index = 0;
 			var colored = cy.collection();
-			var keys = [];
-			sortMap.forEach(function (value, key) {
-				keys.push(key);
-			});
+			var keys = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
 
 			for (var _i = 0; _i < keys.length; ++_i) {
 				var elem = keys[_i];
@@ -1805,6 +1804,61 @@ var AlgorithmsStore = function () {
 					needToColor.style('background-gradient-stop-colors', "white white " + _color + " " + _color);
 				}
 			}
+		}
+	}, {
+		key: "MinimumSpanningTree",
+		value: function MinimumSpanningTree(cy) {
+			var edges = cy.edges();
+			var nodes = cy.nodes();
+			var edgesCounter = new _map2.default();
+			for (var i = 0; i < edges.length; ++i) {
+				edgesCounter.set(edges[i], edges[i].weight);
+			}
+			var sortMap = new _map2.default([].concat((0, _toConsumableArray3.default)(edgesCounter.entries())).sort(function (a, b) {
+				return b[1] - a[1];
+			}));
+			var k = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
+			var keys = k.reverse();
+			console.log('keys: ', keys);
+			keys.forEach(function (key) {
+				return console.log(key.weight);
+			});
+			var underTree = [];
+			for (var _i2 = 0; _i2 < nodes.length; ++_i2) {
+				underTree.push([nodes[_i2]]);
+			}
+
+			var resultEdges = cy.collection();
+			for (var _i3 = 0; _i3 < keys.length; ++_i3) {
+				var firstIndex = 0;
+				var secondIndex = 0;
+				// debugger;
+				for (var j = 0; j < underTree.length; ++j) {
+					var first = keys[_i3].source();
+					var second = keys[_i3].target();
+					// if (underTree[j].include(first) && underTree[j].include(second)) {
+					// 	flag = false;
+					// }
+					if (underTree[j].includes(first)) {
+						firstIndex = j;
+					}
+					if (underTree[j].includes(second)) {
+						secondIndex = j;
+					}
+				}
+
+				if (firstIndex !== secondIndex) {
+					// debugger;
+					resultEdges.merge(keys[_i3]);
+					for (var _i4 = 0; _i4 < underTree[secondIndex].length; ++_i4) {
+						underTree[firstIndex].push(underTree[secondIndex][_i4]);
+					}
+					// underTree[firstIndex].concat(underTree[secondIndex]);
+					underTree.splice(secondIndex, 1);
+				}
+			}
+			console.log('edges: ', resultEdges);
+			resultEdges.addClass('highlight');
 		}
 	}], [{
 		key: "BreadthFirstSearch",
@@ -1856,8 +1910,8 @@ var AlgorithmsStore = function () {
 			var result = result_path.reverse();
 			var result_collection = cy.collection(result);
 
-			for (var _i2 = 0; _i2 < result.length - 1; ++_i2) {
-				var short_edge = result[_i2].edgesWith(result[_i2 + 1]).min(function (edge) {
+			for (var _i5 = 0; _i5 < result.length - 1; ++_i5) {
+				var short_edge = result[_i5].edgesWith(result[_i5 + 1]).min(function (edge) {
 					return edge.data('weight');
 				}).ele;
 				result_collection.merge(short_edge);
@@ -1936,6 +1990,7 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 exports.dijkstra = dijkstra;
+exports.getArrayOfKeysFromMap = getArrayOfKeysFromMap;
 exports.nodeDegree = nodeDegree;
 exports.incidentNodes = incidentNodes;
 exports.nonIncidentNodes = nonIncidentNodes;
@@ -1998,6 +2053,15 @@ function dijkstra(cy, rootNode) {
 	});
 
 	return pathLengthVector;
+}
+
+function getArrayOfKeysFromMap(map) {
+	var keys = [];
+	map.forEach(function (value, key) {
+		keys.push(key);
+	});
+
+	return keys;
 }
 
 function nodeDegree(node) {

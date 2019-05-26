@@ -98,6 +98,14 @@ export default {
 					label: 'GraphConnectivity',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphConnectivity),
 				},
+				{
+					label: 'GraphAddition',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphAddition),
+				},
+				{
+					label: 'MinimumSpanningTree',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.MinimumSpanningTree),
+				},
 			]
 		},
 		{

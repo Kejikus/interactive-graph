@@ -188,7 +188,7 @@ class AlgorithmsStore {
 					}
 				});
 			});
-			usedNodes.merge(srcNode);
+			usedNodes.merge( srcNode );
 		});
 
 		if (actionList.length === 0) {

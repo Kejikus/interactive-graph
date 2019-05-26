@@ -26,9 +26,9 @@ export const msgTypes = {
 
 messager.on(msgTypes.showMessageBox, (title, msg) => {
 	dialog.showMessageBox({
-        type: "none",
-        buttons: ["Close"],
-        title: title,
-        message: msg
+    type: "none",
+    buttons: ["Close"],
+    title: title,
+    message: msg
     }, () => {});
 });

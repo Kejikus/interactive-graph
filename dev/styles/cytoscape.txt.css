@@ -63,3 +63,8 @@ edge[weight] {
 edge[?oriented] {
     target-arrow-shape: triangle;
 }
+
+.highlight {
+    line-color: red;
+    background-gradient-stop-colors: white white red red;
+}

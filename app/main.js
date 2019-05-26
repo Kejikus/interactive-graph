@@ -1603,7 +1603,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			var tasks = new _map2.default();
 			var alg = new AlgorithmsStore();
 
-			tasks.set(_enums.TaskTypeEnum.BreadthFirstSearch, alg.BreadthFirstSearch());
+			tasks.set(_enums.TaskTypeEnum.BreadthFirstSearch, AlgorithmsStore.BreadthFirstSearch);
 			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
 			tasks.set(_enums.TaskTypeEnum.Dijkstra, alg.Dijkstra);
 			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
@@ -1620,8 +1620,8 @@ var AlgorithmsStore = function () {
 	}
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
-		key: 'BreadthFirstSearch',
-		value: function BreadthFirstSearch(cy) {}
+		key: 'WeightRadiusDiameterPower',
+		value: function WeightRadiusDiameterPower(cy) {}
 	}, {
 		key: 'BestFirstSearch',
 		value: function BestFirstSearch(cy) {}
@@ -1664,6 +1664,70 @@ var AlgorithmsStore = function () {
 				currentNode = nextNode;
 			}
 		}
+	}], [{
+		key: 'BreadthFirstSearch',
+		value: function BreadthFirstSearch(cy) {
+			// Validation
+			var selected = cy.$(':selected');
+			var isNotValid = selected.length !== 2 || !selected[0].isNode() && !selected[1].isNode();
+			var isOrientedEdges = cy.edges().filter('[?oriented]').length !== 0;
+			if (isNotValid) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Select two nodes and start algorithm again');
+				return;
+			}
+
+			if (isOrientedEdges) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Invalid graph for dat algorithm');
+				return;
+			}
+
+			// Initialization
+			var startNode = selected[0];
+			var endNode = selected[1];
+			var frontier = [];
+			var visited = [];
+			var paths = new _map2.default();
+
+			frontier.push(startNode);
+			// перебирает все ноды графа, для того чтобы найти кратчайший путь
+			while (frontier.length > 0) {
+				var current = frontier.shift();
+				var nodes_neighbors = current.neighborhood().filter('node');
+				for (var i = 0; i < nodes_neighbors.length; ++i) {
+					var node = nodes_neighbors[i];
+					if (!visited.includes(node)) {
+						frontier.push(node);
+						visited.push(node);
+						paths.set(node, current);
+					}
+				}
+			}
+
+			// восстанавливает путь из start до end
+			var current_node = endNode;
+			var result_path = [current_node];
+			while (current_node !== startNode) {
+				result_path.push(paths.get(current_node));
+				current_node = paths.get(current_node);
+			}
+
+			var result = result_path.reverse();
+			var result_collection = cy.collection(result);
+
+			for (var _i = 0; _i < result.length - 1; ++_i) {
+				var short_edge = result[_i].edgesWith(result[_i + 1]).min(function (edge) {
+					return edge.data('weight');
+				}).ele;
+				result_collection.merge(short_edge);
+			}
+
+			result_collection.addClass('highlight');
+
+			console.log('short path: ', result.length - 1);
+			// messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
+
+			return result.length - 1;
+		}
 	}]);
 	return AlgorithmsStore;
 }();
@@ -1679,7 +1743,7 @@ var AlgorithmsStore = function () {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n\n.highlight {\n    line-color: red;\n    background-gradient-stop-colors: white white red red;\n}\n");
 
 /***/ }),
 

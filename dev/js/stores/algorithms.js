@@ -22,6 +22,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 		tasks.set(TaskTypeEnum.GraphAddition, alg.GraphAddition);
 		tasks.set(TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
+		tasks.set(TaskTypeEnum.GraphPlanarity, alg.GraphPlanarity);
 
 		return tasks;
 	}
@@ -85,7 +86,7 @@ class AlgorithmsStore {
 		result_collection.style('line-color', 'red');
 
 		console.log('short path: ', result.length - 1);
-		// messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
+		//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
 
 		return result.length - 1;
 	}
@@ -209,6 +210,10 @@ class AlgorithmsStore {
 		edges.filter('[?oriented]').forEach(edge => actionList.push({name: 'changeData', param: {elem: edge, key: 'oriented', value: false}}));
 
 		messager.send(msgTypes.graphURDo, 'batch', actionList);
+	}
+
+	GraphPlanarity(cy) {
+
 	}
 
 	GraphConnectivity(cy) {

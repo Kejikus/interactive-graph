@@ -14,6 +14,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.AStar, alg.AStar);
 		tasks.set(TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 		tasks.set(TaskTypeEnum.GraphAddition, alg.GraphAddition);
+		tasks.set(TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
 
 		return tasks;
 	}
@@ -250,4 +251,52 @@ class AlgorithmsStore {
 		}
 	}
 
+	ColoringGraph(cy) {
+		const nodes = cy.nodes();
+
+		const edgesCounter = new Map();
+
+		for (let i = 0; i < nodes.length; ++i) {
+			edgesCounter.set(nodes[i], nodes[i].neighborhood('edge').length);
+		}
+		// console.log('before: ', edgesCounter);
+		const sortMap = new Map([...edgesCounter.entries()].sort((a, b) => b[1] - a[1]));
+		// const incedentColors = new Map();
+		// console.log('after: ', sortMap);
+
+		let index = 1;
+		// let needToColor = cy.collection();
+		const colored = cy.collection();
+		sortMap.forEach((elem, i) => {
+			let needToColor = cy.collection();
+			if (!colored.and(elem)) {
+				needToColor.merge(elem);
+				for (let j = i + 1; j < sortMap.length; ++j) {
+					if (nonIncidentNodes(sortMap.keys()[j]).include(elem)) {
+						needToColor.merge(sortMap.keys()[j]);
+					}
+				}
+			}
+			colored.merge(needToColor);
+			needToColor.addClass(`color-${index++}`);
+		});
+
+
+
+		// for (let i = 0; i < nodes.length; ++i) {
+		// 	let node = nodes[i];
+		// 	for (let j = i; j < nodes.length; ++j) {
+		// 		if (nonIncidentNodes(node).length < nonIncidentNodes(nodes[j]).length) {
+		// 			node = nodes[j];
+		// 		}
+		//
+		// 	}
+		//
+		// }
+		// while (nodes.length > 0) {
+		// 	for (let i = 0; i < nodes.length; ++i) {
+		//
+		// 	}
+		// }
+	}
 }

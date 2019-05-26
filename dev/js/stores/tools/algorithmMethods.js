@@ -49,6 +49,10 @@ export function nodeDegree(node) {
 	return outgoingEdges + directedLoops + undirectedLoops;
 }
 
+export function incidentNodes(node) {
+	return node.neighborhood('node');
+}
+
 export function nonIncidentNodes(node) {
 	const allNodes = node.cy().nodes();
 	const incidentNodes = node.neighborhood('node');

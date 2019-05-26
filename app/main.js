@@ -1572,6 +1572,10 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.InitAlgorithms = undefined;
 
+var _toConsumableArray2 = __webpack_require__(/*! babel-runtime/helpers/toConsumableArray */ "./node_modules/babel-runtime/helpers/toConsumableArray.js");
+
+var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
+
 var _map = __webpack_require__(/*! babel-runtime/core-js/map */ "./node_modules/babel-runtime/core-js/map.js");
 
 var _map2 = _interopRequireDefault(_map);
@@ -1610,6 +1614,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
 			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 			tasks.set(_enums.TaskTypeEnum.GraphAddition, alg.GraphAddition);
+			tasks.set(_enums.TaskTypeEnum.ColoringGraph, alg.ColoringGraph);
 
 			return tasks;
 		}
@@ -1747,6 +1752,56 @@ var AlgorithmsStore = function () {
 				console.log('connected');
 			}
 		}
+	}, {
+		key: "ColoringGraph",
+		value: function ColoringGraph(cy) {
+			var nodes = cy.nodes();
+
+			var edgesCounter = new _map2.default();
+
+			for (var i = 0; i < nodes.length; ++i) {
+				edgesCounter.set(nodes[i], nodes[i].neighborhood('edge').length);
+			}
+			// console.log('before: ', edgesCounter);
+			var sortMap = new _map2.default([].concat((0, _toConsumableArray3.default)(edgesCounter.entries())).sort(function (a, b) {
+				return b[1] - a[1];
+			}));
+			// const incedentColors = new Map();
+			// console.log('after: ', sortMap);
+
+			var index = 1;
+			// let needToColor = cy.collection();
+			var colored = cy.collection();
+			sortMap.forEach(function (elem, i) {
+				var needToColor = cy.collection();
+				if (!colored.and(elem)) {
+					needToColor.merge(elem);
+					for (var j = i + 1; j < sortMap.length; ++j) {
+						if ((0, _algorithmMethods.nonIncidentNodes)(sortMap.keys()[j]).include(elem)) {
+							needToColor.merge(sortMap.keys()[j]);
+						}
+					}
+				}
+				colored.merge(needToColor);
+				needToColor.addClass("color-" + index++);
+			});
+
+			// for (let i = 0; i < nodes.length; ++i) {
+			// 	let node = nodes[i];
+			// 	for (let j = i; j < nodes.length; ++j) {
+			// 		if (nonIncidentNodes(node).length < nonIncidentNodes(nodes[j]).length) {
+			// 			node = nodes[j];
+			// 		}
+			//
+			// 	}
+			//
+			// }
+			// while (nodes.length > 0) {
+			// 	for (let i = 0; i < nodes.length; ++i) {
+			//
+			// 	}
+			// }
+		}
 	}], [{
 		key: "BreadthFirstSearch",
 		value: function BreadthFirstSearch(cy) {
@@ -1877,6 +1932,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.dijkstra = dijkstra;
 exports.nodeDegree = nodeDegree;
+exports.incidentNodes = incidentNodes;
 exports.nonIncidentNodes = nonIncidentNodes;
 exports.generateTable = generateTable;
 exports.generateVectorText = generateVectorText;
@@ -1946,6 +2002,10 @@ function nodeDegree(node) {
 	return outgoingEdges + directedLoops + undirectedLoops;
 }
 
+function incidentNodes(node) {
+	return node.neighborhood('node');
+}
+
 function nonIncidentNodes(node) {
 	var allNodes = node.cy().nodes();
 	var incidentNodes = node.neighborhood('node');
@@ -1991,7 +2051,7 @@ function generateVectorText(vector, prependText) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n\r\n.highlight {\r\n    line-color: red;\r\n    background-gradient-stop-colors: white white red red;\r\n}\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n\n.highlight {\n    line-color: red;\n    background-gradient-stop-colors: white white red red;\n}\n\n.color-1 {\n    line-color: #EFD9CE;\n    background-gradient-stop-colors: white white #EFD9CE #EFD9CE;\n}\n\n.color-2 {\n    line-color: #DEC0F1;\n    background-gradient-stop-colors: white white #DEC0F1 #DEC0F1;\n}\n\n.color-3 {\n    line-color: #B79CED;\n    background-gradient-stop-colors: white white #B79CED #B79CED;\n}\n\n.color-4 {\n    line-color: #957FEF;\n    background-gradient-stop-colors: white white #957FEF #957FEF;\n}\n\n.color-5 {\n    line-color: #7161EF;\n    background-gradient-stop-colors: white white #7161EF #7161EF;\n}\n");
 
 /***/ }),
 
@@ -2022,6 +2082,17 @@ var update = __webpack_require__(/*! ../../node_modules/style-loader/lib/addStyl
 if(content.locals) module.exports = content.locals;
 
 if(false) {}
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/core-js/array/from.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/babel-runtime/core-js/array/from.js ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = { "default": __webpack_require__(/*! core-js/library/fn/array/from */ "./node_modules/babel-runtime/node_modules/core-js/library/fn/array/from.js"), __esModule: true };
 
 /***/ }),
 
@@ -2254,6 +2325,38 @@ exports.default = function (self, call) {
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/helpers/toConsumableArray.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/babel-runtime/helpers/toConsumableArray.js ***!
+  \*****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+exports.__esModule = true;
+
+var _from = __webpack_require__(/*! ../core-js/array/from */ "./node_modules/babel-runtime/core-js/array/from.js");
+
+var _from2 = _interopRequireDefault(_from);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = function (arr) {
+  if (Array.isArray(arr)) {
+    for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+      arr2[i] = arr[i];
+    }
+
+    return arr2;
+  } else {
+    return (0, _from2.default)(arr);
+  }
+};
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/helpers/typeof.js":
 /*!******************************************************!*\
   !*** ./node_modules/babel-runtime/helpers/typeof.js ***!
@@ -2283,6 +2386,20 @@ exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.d
 } : function (obj) {
   return obj && typeof _symbol2.default === "function" && obj.constructor === _symbol2.default && obj !== _symbol2.default.prototype ? "symbol" : typeof obj === "undefined" ? "undefined" : _typeof(obj);
 };
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/fn/array/from.js":
+/*!**********************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/fn/array/from.js ***!
+  \**********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+__webpack_require__(/*! ../../modules/es6.string.iterator */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.string.iterator.js");
+__webpack_require__(/*! ../../modules/es6.array.from */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.array.from.js");
+module.exports = __webpack_require__(/*! ../../modules/_core */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_core.js").Array.from;
+
 
 /***/ }),
 
@@ -2939,6 +3056,26 @@ if (typeof __e == 'number') __e = core; // eslint-disable-line no-undef
 
 /***/ }),
 
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_create-property.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_create-property.js ***!
+  \*********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var $defineProperty = __webpack_require__(/*! ./_object-dp */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_object-dp.js");
+var createDesc = __webpack_require__(/*! ./_property-desc */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_property-desc.js");
+
+module.exports = function (object, index, value) {
+  if (index in object) $defineProperty.f(object, index, createDesc(0, value));
+  else object[index] = value;
+};
+
+
+/***/ }),
+
 /***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js":
 /*!*********************************************************************************!*\
   !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js ***!
@@ -3455,6 +3592,39 @@ module.exports = function (Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCE
     } else $export($export.P + $export.F * (BUGGY || VALUES_BUG), NAME, methods);
   }
   return methods;
+};
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-detect.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-detect.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var ITERATOR = __webpack_require__(/*! ./_wks */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_wks.js")('iterator');
+var SAFE_CLOSING = false;
+
+try {
+  var riter = [7][ITERATOR]();
+  riter['return'] = function () { SAFE_CLOSING = true; };
+  // eslint-disable-next-line no-throw-literal
+  Array.from(riter, function () { throw 2; });
+} catch (e) { /* empty */ }
+
+module.exports = function (exec, skipClosing) {
+  if (!skipClosing && !SAFE_CLOSING) return false;
+  var safe = false;
+  try {
+    var arr = [7];
+    var iter = arr[ITERATOR]();
+    iter.next = function () { return { done: safe = true }; };
+    arr[ITERATOR] = function () { return iter; };
+    exec(arr);
+  } catch (e) { /* empty */ }
+  return safe;
 };
 
 
@@ -4397,6 +4567,55 @@ module.exports = __webpack_require__(/*! ./_core */ "./node_modules/babel-runtim
     || it['@@iterator']
     || Iterators[classof(it)];
 };
+
+
+/***/ }),
+
+/***/ "./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.array.from.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/babel-runtime/node_modules/core-js/library/modules/es6.array.from.js ***!
+  \*******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var ctx = __webpack_require__(/*! ./_ctx */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_ctx.js");
+var $export = __webpack_require__(/*! ./_export */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_export.js");
+var toObject = __webpack_require__(/*! ./_to-object */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-object.js");
+var call = __webpack_require__(/*! ./_iter-call */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-call.js");
+var isArrayIter = __webpack_require__(/*! ./_is-array-iter */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_is-array-iter.js");
+var toLength = __webpack_require__(/*! ./_to-length */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_to-length.js");
+var createProperty = __webpack_require__(/*! ./_create-property */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_create-property.js");
+var getIterFn = __webpack_require__(/*! ./core.get-iterator-method */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/core.get-iterator-method.js");
+
+$export($export.S + $export.F * !__webpack_require__(/*! ./_iter-detect */ "./node_modules/babel-runtime/node_modules/core-js/library/modules/_iter-detect.js")(function (iter) { Array.from(iter); }), 'Array', {
+  // 22.1.2.1 Array.from(arrayLike, mapfn = undefined, thisArg = undefined)
+  from: function from(arrayLike /* , mapfn = undefined, thisArg = undefined */) {
+    var O = toObject(arrayLike);
+    var C = typeof this == 'function' ? this : Array;
+    var aLen = arguments.length;
+    var mapfn = aLen > 1 ? arguments[1] : undefined;
+    var mapping = mapfn !== undefined;
+    var index = 0;
+    var iterFn = getIterFn(O);
+    var length, result, step, iterator;
+    if (mapping) mapfn = ctx(mapfn, aLen > 2 ? arguments[2] : undefined, 2);
+    // if object isn't iterable or it's array with default iterator - use simple case
+    if (iterFn != undefined && !(C == Array && isArrayIter(iterFn))) {
+      for (iterator = iterFn.call(O), result = new C(); !(step = iterator.next()).done; index++) {
+        createProperty(result, index, mapping ? call(iterator, mapfn, [step.value, index], true) : step.value);
+      }
+    } else {
+      length = toLength(O.length);
+      for (result = new C(length); length > index; index++) {
+        createProperty(result, index, mapping ? mapfn(O[index], index) : O[index]);
+      }
+    }
+    result.length = index;
+    return result;
+  }
+});
 
 
 /***/ }),

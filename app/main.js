@@ -1505,10 +1505,6 @@ var _events = __webpack_require__(/*! events */ "events");
 
 var _electron = __webpack_require__(/*! electron */ "electron");
 
-var _help = __webpack_require__(/*! ../text/help.txt */ "./dev/text/help.txt");
-
-var _help2 = _interopRequireDefault(_help);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var Messager = function (_EventEmitter) {
@@ -1520,7 +1516,7 @@ var Messager = function (_EventEmitter) {
 	}
 
 	(0, _createClass3.default)(Messager, [{
-		key: "send",
+		key: 'send',
 		value: function send(messageType) {
 			for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 				args[_key - 1] = arguments[_key];
@@ -1549,12 +1545,7 @@ var msgTypes = exports.msgTypes = {
 };
 
 messager.on(msgTypes.showMessageBox, function (title, msg) {
-	_electron.dialog.showMessageBox({
-		type: "none",
-		buttons: ["Close"],
-		title: title,
-		message: msg
-	}, function () {});
+	_electron.ipcRenderer.send('show-message-box', title, msg);
 });
 
 /***/ }),
@@ -1590,6 +1581,8 @@ var _enums = __webpack_require__(/*! ../const/enums */ "./dev/js/const/enums.js"
 
 var _rendererMessager = __webpack_require__(/*! ../rendererMessager */ "./dev/js/rendererMessager.js");
 
+var _algorithmMethods = __webpack_require__(/*! ./tools/algorithmMethods */ "./dev/js/stores/tools/algorithmMethods.js");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var InitAlgorithms = exports.InitAlgorithms = function () {
@@ -1598,7 +1591,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 	}
 
 	(0, _createClass3.default)(InitAlgorithms, null, [{
-		key: 'create',
+		key: "create",
 		value: function create() {
 			var tasks = new _map2.default();
 			var alg = new AlgorithmsStore();
@@ -1607,6 +1600,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
 			tasks.set(_enums.TaskTypeEnum.Dijkstra, alg.Dijkstra);
 			tasks.set(_enums.TaskTypeEnum.AStar, alg.AStar);
+			tasks.set(_enums.TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 
 			return tasks;
 		}
@@ -1620,52 +1614,87 @@ var AlgorithmsStore = function () {
 	}
 
 	(0, _createClass3.default)(AlgorithmsStore, [{
-		key: 'WeightRadiusDiameterPower',
+		key: "WeightRadiusDiameterPower",
 		value: function WeightRadiusDiameterPower(cy) {}
 	}, {
-		key: 'BestFirstSearch',
+		key: "BestFirstSearch",
 		value: function BestFirstSearch(cy) {}
 	}, {
-		key: 'AStar',
+		key: "AStar",
 		value: function AStar(cy) {}
 	}, {
-		key: 'Dijkstra',
+		key: "Dijkstra",
 		value: function Dijkstra(cy) {
 			var selected = cy.$(':selected');
-			if (selected.length !== 1 || !selected[0].isNode()) {
-				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Select one node and start algorithm again');
+			var rootSelected = selected.length === 1 && selected[0].isNode();
+			if (!rootSelected) {
+				// messager.send(msgTypes.toolbarSetMessage, 'Select one node and start algorithm again');
+				// return;
+				selected.unselect();
+			}
+
+			var root = rootSelected ? selected[0] : null;
+			var matrix = new _map2.default(cy.nodes().map(function (currentRoot) {
+				var pathLengths = (0, _algorithmMethods.dijkstra)(cy, currentRoot);
+				var textVector = pathLengths.reduce(function (text, value) {
+					return text.concat("To " + value[0].data('nodeIdx') + ": " + value[1] + "\n");
+				}, '');
+
+				if (currentRoot === root) _rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Dijkstra vector', "Path from root to all other nodes:\n" + textVector);
+				return [currentRoot, new _map2.default(pathLengths)];
+			}));
+		}
+	}, {
+		key: "GraphConnectivity",
+		value: function GraphConnectivity(cy) {
+			console.log('graph connectivity');
+			var firstNode = cy.nodes()[0];
+
+			var frontier = [firstNode];
+			var visited = [firstNode];
+
+			var isConnected = false;
+
+			while (frontier.length > 0) {
+				var current = frontier.shift();
+				var nodes_neighbors = current.neighborhood().filter('node');
+				for (var i = 0; i < nodes_neighbors.length; ++i) {
+					var node = nodes_neighbors[i];
+					if (!visited.includes(node)) {
+						frontier.push(node);
+						visited.push(node);
+					}
+				}
+
+				if (visited.length === cy.nodes().length) {
+					isConnected = true;
+					break;
+				}
+			}
+
+			if (!isConnected) {
+				console.log('not connected');
 				return;
 			}
 
-			var root = selected[0];
-			var weight = function weight(edge) {
-				return edge.data().weight;
-			};
-
-			var currentNode = root;
-			var visitedNodes = cy.collection();
-			for (;;) {
-				// Calculating new distances and ordering
-				var neighbourNodes = currentNode.neighborhood('node').difference(visitedNodes);
-				neighbourNodes.forEach(function (node) {
-					var shortestEdge1 = currentNode.edgesWith(node).difference('[target="' + currentNode.data().id + '"][?oriented]').min(function (ele) {
-						return ele.data().weight;
-					}).ele;
-					var newWeight = shortestEdge1.data().weight + (currentNode.scratch('_sum_weight') || 0);
-					node.scratch("_sum_weight", Math.min(node.scratch("_sum_weight"), newWeight));
+			var isOrientedEdges = cy.edges().filter('[?oriented]').length !== 0;
+			if (isOrientedEdges) {
+				var isWeakConnectivity = false;
+				cy.nodes().forEach(function (node) {
+					var edges = node.neighborhood().filter('edge');
+					var orientedEdges = node.neighborhood().filter("edge[source=\"" + node.data('id') + "\"][?oriented]");
+					var result = edges.length === orientedEdges.length;
+					if (result) isWeakConnectivity = true;
 				});
-				var nextNode = neighbourNodes.min(function (node) {
-					return node.scratch("_sum_weight");
-				}).ele;
 
-				if (neighbourNodes.length === 0) break;
-
-				visitedNodes.merge(currentNode);
-				currentNode = nextNode;
+				var m = isWeakConnectivity ? 'weak connected' : 'strong connected';
+				console.log(m);
+			} else {
+				console.log('connected');
 			}
 		}
 	}], [{
-		key: 'BreadthFirstSearch',
+		key: "BreadthFirstSearch",
 		value: function BreadthFirstSearch(cy) {
 			// Validation
 			var selected = cy.$(':selected');
@@ -1734,6 +1763,68 @@ var AlgorithmsStore = function () {
 
 /***/ }),
 
+/***/ "./dev/js/stores/tools/algorithmMethods.js":
+/*!*************************************************!*\
+  !*** ./dev/js/stores/tools/algorithmMethods.js ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+exports.dijkstra = dijkstra;
+function dijkstra(cy, root) {
+	var weight = function weight(edge) {
+		return edge.data('weight');
+	};
+	var currentSum = function currentSum(ele) {
+		return ele.scratch("_dijkstra_sum_weight") || Infinity;
+	};
+	var setSum = function setSum(ele, sum) {
+		return ele.scratch("_dijkstra_sum_weight", sum);
+	};
+
+	var currentNode = root;
+	setSum(root, 0);
+	var visitedNodes = cy.collection();
+	for (;;) {
+		// Calculating new distances and ordering
+		var neighbourNodes = currentNode.neighborhood('node').difference(visitedNodes);
+		neighbourNodes.forEach(function (node) {
+			var shortestEdge1 = currentNode.edgesWith(node).difference("[target=\"" + currentNode.data('id') + "\"][?oriented]").min(weight).ele;
+			var newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
+			setSum(node, Math.min(currentSum(node), newWeight));
+		});
+
+		if (neighbourNodes.length === 0) break;
+
+		var nextNode = neighbourNodes.min(function (node) {
+			return currentSum(node);
+		}).ele;
+
+		visitedNodes.merge(currentNode);
+		currentNode = nextNode;
+	}
+
+	var pathLengthVector = cy.nodes().sort(function (node1, node2) {
+		return node1.data('id') - node2.data('id');
+	}).map(function (node) {
+		return [node, currentSum(node)];
+	});
+
+	cy.nodes().forEach(function (node) {
+		return node.removeScratch("_dijkstra_sum_weight");
+	});
+
+	return pathLengthVector;
+}
+
+/***/ }),
+
 /***/ "./dev/styles/cytoscape.txt.css":
 /*!**************************************!*\
   !*** ./dev/styles/cytoscape.txt.css ***!
@@ -1774,19 +1865,6 @@ var update = __webpack_require__(/*! ../../node_modules/style-loader/lib/addStyl
 if(content.locals) module.exports = content.locals;
 
 if(false) {}
-
-/***/ }),
-
-/***/ "./dev/text/help.txt":
-/*!***************************!*\
-  !*** ./dev/text/help.txt ***!
-  \***************************/
-/*! exports provided: default */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-__webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("Данная программа визуализирует представление графа в компьютере и работу с ним. Главное окно разделено на три части: меню, визуализатор и математическое представление графа.\n\nВ меню находятся следующие пункты:\n    “File” – пункт меню, в котором реализованы следующие возможности:\n        “New Graph” (Ctrl + N*) – очищает все данные о предыдущем графе.\n        “Open” (Ctrl + O) – открывает файл с графом.\n            Программа может открыть несколько видов файлов: evf(Edges/Vertices Format), imgd(Incidence Matrix Graph Data), amgd(Adjacency Matrix Graph Data)**.\n            Любой файл может содержать комментарии, начинающиеся со знака %.\n        “Save as” – сохраняет файл в одном из трех заданных форматов.\n            Для сохранения в формате evf – сочетание клавиш (Сtrl + S).\n            Также есть возможность сохранить граф как картинку.\n            При выходе, если файл не сохранен, спрашивается, нужно ли его сохранить.\n        “Exit” – выход из программы.\n    “Theory of graph tasks” – пункт меню, в котором будут решаться различные задачи графов. В настоящее время находится в разработке.\n    “About” – пункт меню “О программе”\n        “Help” (F1) – описание программы и ее возможностей.\n        “Authors” – имена разработчиков и команды поддержки.\n\nМатематическое представление графа, содержит следующие возможности:\nПоказывает в реальном времени матрицу смежности графа, которая изменяется при изменении графа. Аналогично при изменении матрицы смежности, происходит изменение графа. (В разработке)\n\nВизуализатор преобразует некоторые данные в графическое представление, позволяет изменять граф в реальном времени и др.:\n    Кнопка “Pan/select” – отменяет действие добавления ребра или вершины. Аналогично работает двойное нажатие на кнопку режима добавления.\n    Кнопка “Add node” (Ctrl + D) позволяет устанавливать вершины мышью. После выбора имени вершины, щелкните на визуализатор, туда, куда вы хотите ее поместить.\n    Кнопка “Add edge” (Ctrl + E) позволяет устанавливать связь между вершинами мышью, с указанием веса, который можно ввести либо с клавиатуры, либо с помощью стрелочек на экране.\n        Так же можно задать ориентированность ребра, установив галочку.\n        По умолчанию ребро не ориентировано, а вес равен 1.\n        После выбора параметров, потяните мышью от одной вершины к другой для создания ребра.\n    Можно двигать вершины, зажав ее левой клавишей мыши и потянув в нужную вам сторону.\n    Присутствуют горячие клавиши “Undo” (Ctrl + Z) и “Redo” (Ctrl + Shift + Z), которые в процессе работы сохраняют 10 последних состояний графа и позволяют перемещаться между ними.\n\n* - в скобках указаны горячие клавиши, которые привязаны к данным возможностям программы.\n** - описание типов, находится в приложении.");
 
 /***/ }),
 

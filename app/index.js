@@ -152,6 +152,15 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 //     win.webContents.send(msgType, obj);
 // }
 
+_electron.ipcMain.on('show-message-box', function (sender, title, msg) {
+	_electron.dialog.showMessageBox({
+		type: "none",
+		buttons: ["Close"],
+		title: title,
+		message: msg
+	}, function () {});
+});
+
 var win = exports.win = void 0;
 
 function createWindow() {
@@ -186,7 +195,7 @@ function createWindow() {
 	});
 }
 
-process.env.ELECTRON_ENABLE_LOGGING = true;
+// process.env.ELECTRON_ENABLE_LOGGING = true;
 
 _electron.app.on('ready', createWindow);
 
@@ -361,6 +370,11 @@ exports.default = {
 			label: 'Dijkstra',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Dijkstra);
+			}
+		}, {
+			label: 'GraphConnectivity',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphConnectivity);
 			}
 		}]
 	}, {

@@ -132,7 +132,7 @@ class AdjacencyMatrix extends Component {
 					</tr>
 					</thead>
 					<tbody>
-					{rows}
+						{rows}
 					</tbody>
 				</table>
 			</div>

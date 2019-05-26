@@ -11,6 +11,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.BestFirstSearch, alg.BestFirstSearch);
 		tasks.set(TaskTypeEnum.Dijkstra, alg.Dijkstra);
 		tasks.set(TaskTypeEnum.AStar, alg.AStar);
+		tasks.set(TaskTypeEnum.GraphConnectivity, alg.GraphConnectivity);
 
 		return tasks;
 	}
@@ -117,6 +118,54 @@ class AlgorithmsStore {
 		const table = generateTable(matrix, 5);
 
 		messager.send(msgTypes.showMessageBox, 'Dijkstra matrix', `Matrix:\n${table}`);
+	}
+
+	GraphConnectivity(cy) {
+		console.log('graph connectivity');
+		const firstNode = cy.nodes()[0];
+
+		const frontier = [firstNode];
+		const visited = [firstNode];
+
+		let isConnected = false;
+
+		while (frontier.length > 0) {
+			const current = frontier.shift();
+			const nodes_neighbors = current.neighborhood().filter('node');
+			for (let i = 0; i < nodes_neighbors.length; ++i) {
+				const node = nodes_neighbors[i];
+				if (!visited.includes(node)) {
+					frontier.push(node);
+					visited.push(node);
+				}
+			}
+
+			if (visited.length === cy.nodes().length) {
+				isConnected = true;
+				break;
+			}
+		}
+
+		if (!isConnected) {
+			console.log('not connected');
+			return;
+		}
+
+		const isOrientedEdges = cy.edges().filter('[?oriented]').length !== 0;
+		if (isOrientedEdges) {
+			let isWeakConnectivity = false;
+			cy.nodes().forEach(node => {
+				const edges = node.neighborhood().filter('edge');
+				const orientedEdges = node.neighborhood().filter(`edge[source="${node.data('id')}"][?oriented]`);
+				const result = edges.length === orientedEdges.length;
+				if (result) isWeakConnectivity = true;
+			});
+
+			const m = isWeakConnectivity ? 'weak connected' : 'strong connected';
+			console.log(m);
+		} else {
+			console.log('connected');
+		}
 	}
 
 }

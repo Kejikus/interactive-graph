@@ -86,6 +86,10 @@ export default {
 					label: 'Dijkstra',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Dijkstra),
 				},
+				{
+					label: 'GraphConnectivity',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphConnectivity),
+				},
 			]
 		},
 		{

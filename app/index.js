@@ -371,6 +371,11 @@ exports.default = {
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Dijkstra);
 			}
+		}, {
+			label: 'GraphConnectivity',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphConnectivity);
+			}
 		}]
 	}, {
 		label: "About",

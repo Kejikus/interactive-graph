@@ -353,9 +353,14 @@ exports.default = {
 		label: "Theory of graph tasks",
 		type: "submenu",
 		submenu: [{
-			label: 'Task 1',
+			label: 'BreadthFirstSearch',
 			click: function click() {
-				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Task1);
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.BreadthFirstSearch);
+			}
+		}, {
+			label: 'Dijkstra',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Dijkstra);
 			}
 		}]
 	}, {

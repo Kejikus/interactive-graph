@@ -79,8 +79,12 @@ export default {
 			type: "submenu",
 			submenu: [
 				{
-					label: 'Task 1',
-					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Task1),
+					label: 'BreadthFirstSearch',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BreadthFirstSearch),
+				},
+				{
+					label: 'Dijkstra',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Dijkstra),
 				},
 			]
 		},

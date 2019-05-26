@@ -1,6 +1,5 @@
 import {EventEmitter} from 'events';
-import {dialog} from "electron";
-import helpTxt from "../text/help.txt";
+import {ipcRenderer} from 'electron';
 
 class Messager extends EventEmitter {
 	send(messageType, ...args) {
@@ -25,10 +24,5 @@ export const msgTypes = {
 };
 
 messager.on(msgTypes.showMessageBox, (title, msg) => {
-	dialog.showMessageBox({
-        type: "none",
-        buttons: ["Close"],
-        title: title,
-        message: msg
-    }, () => {});
+	ipcRenderer.send('show-message-box', title, msg);
 });

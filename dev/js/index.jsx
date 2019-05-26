@@ -6,6 +6,15 @@ import mainMenu from './mainComponents/mainMenu';
 //     win.webContents.send(msgType, obj);
 // }
 
+ipcMain.on('show-message-box', (sender, title, msg) => {
+	dialog.showMessageBox({
+        type: "none",
+        buttons: ["Close"],
+        title: title,
+        message: msg
+    }, () => {});
+});
+
 export let win;
 
 function createWindow() {
@@ -40,7 +49,7 @@ function createWindow() {
 	});
 }
 
-process.env.ELECTRON_ENABLE_LOGGING = true;
+// process.env.ELECTRON_ENABLE_LOGGING = true;
 
 app.on('ready', createWindow);
 

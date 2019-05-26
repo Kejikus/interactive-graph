@@ -49,6 +49,12 @@ export function nodeDegree(node) {
 	return outgoingEdges + directedLoops + undirectedLoops;
 }
 
+export function nonIncidentNodes(node) {
+	const allNodes = node.cy().nodes();
+	const incidentNodes = node.neighborhood('node');
+	return allNodes.difference(incidentNodes);
+}
+
 export function generateTable(matrix, colWidth) {
 	// Matrix: Map of nodes to ints
 	// [[<node>, <int>], [<node>, <int>], ...]

@@ -259,44 +259,28 @@ class AlgorithmsStore {
 		for (let i = 0; i < nodes.length; ++i) {
 			edgesCounter.set(nodes[i], nodes[i].neighborhood('edge').length);
 		}
-		// console.log('before: ', edgesCounter);
 		const sortMap = new Map([...edgesCounter.entries()].sort((a, b) => b[1] - a[1]));
-		// const incedentColors = new Map();
-		// console.log('after: ', sortMap);
 
 		let index = 1;
-		// let needToColor = cy.collection();
 		const colored = cy.collection();
-		sortMap.forEach((elem, i) => {
+		const keys = [];
+		sortMap.forEach((value, key) => {
+			keys.push(key);
+		});
+
+		for (let i = 0; i < keys.length; ++i) {
+			const elem = keys[i];
 			let needToColor = cy.collection();
-			if (!colored.and(elem)) {
+			if (!(colored.and(elem).length > 0)) {
 				needToColor.merge(elem);
-				for (let j = i + 1; j < sortMap.length; ++j) {
-					if (nonIncidentNodes(sortMap.keys()[j]).include(elem)) {
-						needToColor.merge(sortMap.keys()[j]);
+				for (let j = i + 1; j < sortMap.size; ++j) {
+					if (nonIncidentNodes(keys[j]).and(elem).length > 0) {
+						needToColor.merge(keys[j]);
 					}
 				}
 			}
 			colored.merge(needToColor);
 			needToColor.addClass(`color-${index++}`);
-		});
-
-
-
-		// for (let i = 0; i < nodes.length; ++i) {
-		// 	let node = nodes[i];
-		// 	for (let j = i; j < nodes.length; ++j) {
-		// 		if (nonIncidentNodes(node).length < nonIncidentNodes(nodes[j]).length) {
-		// 			node = nodes[j];
-		// 		}
-		//
-		// 	}
-		//
-		// }
-		// while (nodes.length > 0) {
-		// 	for (let i = 0; i < nodes.length; ++i) {
-		//
-		// 	}
-		// }
+		}
 	}
 }

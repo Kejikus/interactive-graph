@@ -1762,45 +1762,31 @@ var AlgorithmsStore = function () {
 			for (var i = 0; i < nodes.length; ++i) {
 				edgesCounter.set(nodes[i], nodes[i].neighborhood('edge').length);
 			}
-			// console.log('before: ', edgesCounter);
 			var sortMap = new _map2.default([].concat((0, _toConsumableArray3.default)(edgesCounter.entries())).sort(function (a, b) {
 				return b[1] - a[1];
 			}));
-			// const incedentColors = new Map();
-			// console.log('after: ', sortMap);
 
 			var index = 1;
-			// let needToColor = cy.collection();
 			var colored = cy.collection();
-			sortMap.forEach(function (elem, i) {
+			var keys = [];
+			sortMap.forEach(function (value, key) {
+				keys.push(key);
+			});
+
+			for (var _i = 0; _i < keys.length; ++_i) {
+				var elem = keys[_i];
 				var needToColor = cy.collection();
-				if (!colored.and(elem)) {
+				if (!(colored.and(elem).length > 0)) {
 					needToColor.merge(elem);
-					for (var j = i + 1; j < sortMap.length; ++j) {
-						if ((0, _algorithmMethods.nonIncidentNodes)(sortMap.keys()[j]).include(elem)) {
-							needToColor.merge(sortMap.keys()[j]);
+					for (var j = _i + 1; j < sortMap.size; ++j) {
+						if ((0, _algorithmMethods.nonIncidentNodes)(keys[j]).and(elem).length > 0) {
+							needToColor.merge(keys[j]);
 						}
 					}
 				}
 				colored.merge(needToColor);
 				needToColor.addClass("color-" + index++);
-			});
-
-			// for (let i = 0; i < nodes.length; ++i) {
-			// 	let node = nodes[i];
-			// 	for (let j = i; j < nodes.length; ++j) {
-			// 		if (nonIncidentNodes(node).length < nonIncidentNodes(nodes[j]).length) {
-			// 			node = nodes[j];
-			// 		}
-			//
-			// 	}
-			//
-			// }
-			// while (nodes.length > 0) {
-			// 	for (let i = 0; i < nodes.length; ++i) {
-			//
-			// 	}
-			// }
+			}
 		}
 	}], [{
 		key: "BreadthFirstSearch",
@@ -1852,8 +1838,8 @@ var AlgorithmsStore = function () {
 			var result = result_path.reverse();
 			var result_collection = cy.collection(result);
 
-			for (var _i = 0; _i < result.length - 1; ++_i) {
-				var short_edge = result[_i].edgesWith(result[_i + 1]).min(function (edge) {
+			for (var _i2 = 0; _i2 < result.length - 1; ++_i2) {
+				var short_edge = result[_i2].edgesWith(result[_i2 + 1]).min(function (edge) {
 					return edge.data('weight');
 				}).ele;
 				result_collection.merge(short_edge);

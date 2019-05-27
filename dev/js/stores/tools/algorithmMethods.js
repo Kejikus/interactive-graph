@@ -62,6 +62,10 @@ export function incidentNodes(node) {
 	return node.neighborhood('node');
 }
 
+export function incidentEdges(node) {
+	return node.neighborhood('edge');
+}
+
 export function nonIncidentNodes(node) {
 	const allNodes = node.cy().nodes();
 	const incidentNodes = node.neighborhood('node');

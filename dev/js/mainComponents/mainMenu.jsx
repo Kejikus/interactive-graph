@@ -106,6 +106,10 @@ export default {
 					label: 'MinimumSpanningTree',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.MinimumSpanningTree),
 				},
+				{
+					label: 'BestFirstSearch',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BestFirstSearch),
+				},
 			]
 		},
 		{

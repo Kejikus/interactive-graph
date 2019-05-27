@@ -93,8 +93,8 @@ class AlgorithmsStore {
 		result_collection.style('background-gradient-stop-colors', `white white red red`);
 		result_collection.style('line-color', 'red');
 
-		console.log('short path: ', result.length - 1);
-		//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
+		// console.log('short path: ', result.length - 1);
+		messager.send(msgTypes.showMessageBox, 'BFS', `Shortest path length is ${result.length - 1}`);
 
 		return result.length - 1;
 	}
@@ -360,8 +360,13 @@ class AlgorithmsStore {
 			return;
 		}
 
+		actionList.push({
+			name: 'remove',
+			param: edges
+		});
+
 		// Undirect all directed edges
-		edges.filter('[?oriented]').forEach(edge => actionList.push({name: 'changeData', param: {elem: edge, key: 'oriented', value: false}}));
+		// edges.filter('[?oriented]').forEach(edge => actionList.push({name: 'changeData', param: {elem: edge, key: 'oriented', value: false}}));
 
 		messager.send(msgTypes.graphURDo, 'batch', actionList);
 	}

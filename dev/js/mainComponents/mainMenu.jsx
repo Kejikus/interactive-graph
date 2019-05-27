@@ -110,14 +110,6 @@ export default {
 					label: 'BestFirstSearch',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BestFirstSearch),
 				},
-				{
-					label: 'TheProblemOfWeddings',
-					click: () => ipcSend("execute-algorithm", TaskTypeEnum.TheProblemOfWeddings),
-				},
-				// {
-				// 	label: 'Are two graphs isomorphic',
-				// 	click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphIsomorphism),
-				// },
 			]
 		},
 		{

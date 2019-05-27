@@ -2490,11 +2490,15 @@ var AlgorithmsStore = function () {
 							paths.delete(paths.keys().next().value);
 						}
 						frontier.push(paths.values().next().value[0]);
-						if (node === endNode) current = node;
+						if (node === endNode) {
+							current = node;
+							break;
+						}
 					}
 					paths = new _map2.default([].concat((0, _toConsumableArray3.default)(paths.entries())).sort(function (a, b) {
 						return a[0] - b[0];
 					}));
+					// debugger;
 				}
 			}
 
@@ -2520,7 +2524,88 @@ var AlgorithmsStore = function () {
 		}
 	}, {
 		key: "AStar",
-		value: function AStar(cy) {}
+		value: function AStar(cy) {
+			// Validation
+			var selected = cy.$(':selected');
+			var isNotValid = selected.length !== 2 || !selected[0].isNode() && !selected[1].isNode();
+			if (isNotValid) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.toolbarSetMessage, 'Select two nodes and start algorithm again');
+				return;
+			}
+
+			var startNode = selected[0];
+			var endNode = selected[1];
+
+			var frontier = [];
+			var visited = [startNode];
+			var paths = new _map2.default();
+			var cameFrom = new _map2.default();
+			paths.set(0, [startNode]);
+			frontier.push(startNode);
+			while (frontier.length > 0) {
+				if (current === endNode) break;
+				var current = frontier.shift();
+				// const incNodes = incidentNodes(current);
+				var incEdges = (0, _algorithmMethods.incidentEdges)(current);
+				for (var i = 0; i < incEdges.length; ++i) {
+					var node = null;
+					var weight = paths.keys().next().value;
+					var values = paths.get(incEdges[i].data().weight);
+					if (values === undefined) {
+						values = [];
+					}
+					if (incEdges[i].source() === current) {
+						node = incEdges[i].target();
+						if (visited.includes(node)) continue;
+						values.unshift(node);
+						paths.set(incEdges[i].data().weight + weight, values);
+					} else if (incEdges[i].target() === current) {
+						node = incEdges[i].source();
+						if (visited.includes(node)) continue;
+						values.unshift(node);
+						paths.set(incEdges[i].data().weight + weight, values);
+					}
+
+					if (!visited.includes(node)) {
+						visited.push(current);
+						cameFrom.set(node, current);
+						paths.values().next().value.splice(0, 1);
+						if (paths.values().next().value.length === 0) {
+							paths.delete(paths.keys().next().value);
+						}
+						frontier.push(paths.values().next().value[0]);
+						if (node === endNode) {
+							current = node;
+							break;
+						}
+					}
+					paths = new _map2.default([].concat((0, _toConsumableArray3.default)(paths.entries())).sort(function (a, b) {
+						return a[0] - b[0];
+					}));
+				}
+				// debugger;
+			}
+
+			var current_node = endNode;
+			var result_path = [current_node];
+			while (current_node !== startNode) {
+				result_path.push(cameFrom.get(current_node));
+				current_node = cameFrom.get(current_node);
+			}
+
+			var result = result_path.reverse();
+			var result_collection = cy.collection(result);
+
+			for (var _i3 = 0; _i3 < result.length - 1; ++_i3) {
+				var short_edge = result[_i3].edgesWith(result[_i3 + 1]).min(function (edge) {
+					return edge.data('weight');
+				}).ele;
+				result_collection.merge(short_edge);
+			}
+
+			result_collection.style('background-gradient-stop-colors', "white white red red");
+			result_collection.style('line-color', 'red');
+		}
 	}, {
 		key: "Dijkstra",
 		value: function Dijkstra(cy) {
@@ -2666,13 +2751,13 @@ var AlgorithmsStore = function () {
 
 			var groups = [];
 
-			for (var _i3 = 0; _i3 < keys.length; ++_i3) {
-				var elem = keys[_i3];
+			for (var _i4 = 0; _i4 < keys.length; ++_i4) {
+				var elem = keys[_i4];
 				var needToColor = cy.collection();
 				if (colored.and(elem).length === 0) {
 					// elem is not colored
 					needToColor.merge(elem);
-					for (var j = _i3 + 1; j < sortMap.size; ++j) {
+					for (var j = _i4 + 1; j < sortMap.size; ++j) {
 						if (keys[j].neighborhood('node').and(elem).length === 0) {
 							// elem not bound
 							needToColor.merge(keys[j]);
@@ -2718,17 +2803,17 @@ var AlgorithmsStore = function () {
 			var k = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
 			var keys = k.reverse();
 			var underTree = [];
-			for (var _i4 = 0; _i4 < nodes.length; ++_i4) {
-				underTree.push([nodes[_i4]]);
+			for (var _i5 = 0; _i5 < nodes.length; ++_i5) {
+				underTree.push([nodes[_i5]]);
 			}
 
 			var resultEdges = cy.collection();
-			for (var _i5 = 0; _i5 < keys.length; ++_i5) {
+			for (var _i6 = 0; _i6 < keys.length; ++_i6) {
 				var firstIndex = 0;
 				var secondIndex = 0;
 				for (var j = 0; j < underTree.length; ++j) {
-					var first = keys[_i5].source();
-					var second = keys[_i5].target();
+					var first = keys[_i6].source();
+					var second = keys[_i6].target();
 					if (underTree[j].includes(first)) {
 						firstIndex = j;
 					}
@@ -2738,9 +2823,9 @@ var AlgorithmsStore = function () {
 				}
 
 				if (firstIndex !== secondIndex) {
-					resultEdges.merge(keys[_i5]);
-					for (var _i6 = 0; _i6 < underTree[secondIndex].length; ++_i6) {
-						underTree[firstIndex].push(underTree[secondIndex][_i6]);
+					resultEdges.merge(keys[_i6]);
+					for (var _i7 = 0; _i7 < underTree[secondIndex].length; ++_i7) {
+						underTree[firstIndex].push(underTree[secondIndex][_i7]);
 					}
 					underTree.splice(secondIndex, 1);
 				}
@@ -2967,9 +3052,9 @@ var AlgorithmsStore = function () {
 				var ret = [];
 				for (var i = 0; i < matrix.length; i++) {
 					ret.push([]);
-				}for (var _i7 = 0; _i7 < matrix.length; _i7++) {
+				}for (var _i8 = 0; _i8 < matrix.length; _i8++) {
 					for (var j = 0; j < matrix.length; j++) {
-						ret[j].push(matrix[_i7][j]);
+						ret[j].push(matrix[_i8][j]);
 					}
 				}
 				return ret;
@@ -3094,12 +3179,12 @@ var AlgorithmsStore = function () {
 						return;
 					}
 
-					for (var _i8 = srcIdx + 1; _i8 < currentDegree; _i8++) {
-						if (degrees[_i8] === 0) {
+					for (var _i9 = srcIdx + 1; _i9 < currentDegree; _i9++) {
+						if (degrees[_i9] === 0) {
 							_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', "Invalid degree vector, can't place all edges");
 							return;
 						}
-						degrees[_i8]--;
+						degrees[_i9]--;
 						var _id = -1;
 						_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextId, function (i) {
 							return _id = i;
@@ -3111,7 +3196,7 @@ var AlgorithmsStore = function () {
 								data: {
 									id: _id,
 									source: nodeIds[srcIdx],
-									target: nodeIds[_i8],
+									target: nodeIds[_i9],
 									weight: 1
 								}
 							}
@@ -3292,7 +3377,7 @@ function generateVectorText(vector, prependText) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n");
 
 /***/ }),
 

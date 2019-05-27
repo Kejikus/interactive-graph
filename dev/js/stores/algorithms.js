@@ -194,9 +194,13 @@ class AlgorithmsStore {
 						paths.delete(paths.keys().next().value);
 					}
 					frontier.push(paths.values().next().value[0]);
-					if (node === endNode) current = node;
+					if (node === endNode) {
+						current = node;
+						break;
+					}
 				}
 				paths = new Map([...paths.entries()].sort((a, b) => a[0] - b[0]));
+				// debugger;
 			}
 		}
 
@@ -220,7 +224,82 @@ class AlgorithmsStore {
 	}
 
 	static AStar(cy) {
+		// Validation
+		const selected = cy.$(':selected');
+		const isNotValid = selected.length !== 2 || (!selected[0].isNode() && !selected[1].isNode());
+		if (isNotValid) {
+			messager.send(msgTypes.toolbarSetMessage, 'Select two nodes and start algorithm again');
+			return;
+		}
 
+		const startNode = selected[0];
+		const endNode = selected[1];
+
+		const frontier = [];
+		const visited = [startNode];
+		let paths = new Map();
+		const cameFrom = new Map();
+		paths.set(0, [startNode]);
+		frontier.push(startNode);
+		while (frontier.length > 0) {
+			if (current === endNode) break;
+			let current = frontier.shift();
+			// const incNodes = incidentNodes(current);
+			const incEdges = incidentEdges(current);
+			for (let i = 0; i < incEdges.length; ++i) {
+				let node = null;
+				let weight = paths.keys().next().value;
+				let values = paths.get(incEdges[i].data().weight);
+				if (values === undefined) {
+					values = [];
+				}
+				if (incEdges[i].source() === current) {
+					node = incEdges[i].target();
+					if (visited.includes(node)) continue;
+					values.unshift(node);
+					paths.set(incEdges[i].data().weight + weight, values);
+				} else if (incEdges[i].target() === current) {
+					node = incEdges[i].source();
+					if (visited.includes(node)) continue;
+					values.unshift(node);
+					paths.set(incEdges[i].data().weight + weight, values);
+				}
+
+				if (!visited.includes(node)) {
+					visited.push(current);
+					cameFrom.set(node, current);
+					paths.values().next().value.splice(0, 1);
+					if (paths.values().next().value.length === 0) {
+						paths.delete(paths.keys().next().value);
+					}
+					frontier.push(paths.values().next().value[0]);
+					if (node === endNode) {
+						current = node;
+						break;
+					}
+				}
+				paths = new Map([...paths.entries()].sort((a, b) => a[0] - b[0]));
+			}
+			// debugger;
+		}
+
+		let current_node = endNode;
+		let result_path = [current_node];
+		while (current_node !== startNode) {
+			result_path.push(cameFrom.get(current_node));
+			current_node = cameFrom.get(current_node);
+		}
+
+		const result = result_path.reverse();
+		const result_collection = cy.collection(result);
+
+		for (let i = 0; i < result.length - 1; ++i) {
+			const short_edge = result[i].edgesWith(result[i + 1]).min((edge) => edge.data('weight')).ele;
+			result_collection.merge(short_edge);
+		}
+
+		result_collection.style('background-gradient-stop-colors', `white white red red`);
+		result_collection.style('line-color', 'red');
 	}
 
 	static Dijkstra(cy) {

@@ -1670,6 +1670,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.GraphPlanarity, AlgorithmsStore.GraphPlanarity);
 			tasks.set(_enums.TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
 			tasks.set(_enums.TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
+			tasks.set(_enums.TaskTypeEnum.CycleProblem, AlgorithmsStore.CycleProblem);
 
 			return tasks;
 		}
@@ -1973,8 +1974,6 @@ var AlgorithmsStore = function () {
 				if (needToColor.length > 0) groups.push(needToColor);
 			}
 
-			console.log(groups);
-
 			return {
 				chromaColor: index - 1,
 				groups: groups
@@ -1982,7 +1981,9 @@ var AlgorithmsStore = function () {
 		}
 	}, {
 		key: "MinimumSpanningTree",
-		value: function MinimumSpanningTree(cy) {
+		value: function MinimumSpanningTree(cy, colorGraph) {
+			colorGraph = colorGraph === undefined ? true : colorGraph;
+
 			var edges = cy.edges();
 			var nodes = cy.nodes();
 			var edgesCounter = new _map2.default();
@@ -2023,11 +2024,111 @@ var AlgorithmsStore = function () {
 				}
 			}
 
-			var src = resultEdges.sources();
-			var tgt = resultEdges.targets();
-			resultEdges.merge(src).merge(tgt);
-			resultEdges.style('background-gradient-stop-colors', "white white red red");
-			resultEdges.style('line-color', 'red');
+			if (colorGraph) {
+				var src = resultEdges.sources();
+				var tgt = resultEdges.targets();
+				var resultColl = resultEdges.union(src).union(tgt);
+				resultColl.style('background-gradient-stop-colors', "white white red red");
+				resultColl.style('line-color', 'red');
+			}
+
+			return resultEdges;
+		}
+	}, {
+		key: "CycleProblem",
+		value: function CycleProblem(cy) {
+			var graphTreeEdges = AlgorithmsStore.MinimumSpanningTree(cy, false);
+			var leftEdges = cy.edges().difference(graphTreeEdges).sort(function (a, b) {
+				return a.data('weight') - b.data('weight');
+			});
+			var tree = graphTreeEdges.union(graphTreeEdges.sources()).union(graphTreeEdges.targets());
+
+			if (leftEdges.length === 0) {
+				var centerNodes = [];
+				tree.filter('node').forEach(function (node) {
+					var centralityDegree = 0;
+					node.scratch('degreeC', 0);
+					var queue = [node];
+					var visited = cy.collection();
+
+					var _loop = function _loop() {
+						var currentNode = queue.shift();
+						var neighborEdges = currentNode.neighborhood('edge').and(tree);
+						var neighborNodes = neighborEdges.sources().union(neighborEdges.targets()).difference(currentNode).difference(visited);
+						neighborNodes.forEach(function (tgtNode) {
+							tgtNode.scratch('degreeC', currentNode.scratch('degreeC') + 1);
+							centralityDegree = Math.max(centralityDegree, currentNode.scratch('degreeC') + 1);
+							queue.push(tgtNode);
+						});
+						visited.merge(currentNode);
+					};
+
+					while (queue.length > 0) {
+						_loop();
+					}
+					if (centerNodes.length === 0 || centerNodes[0][1] > centralityDegree) {
+						centerNodes = [[node, centralityDegree]];
+					}
+					if (centerNodes[0][1] === centralityDegree) centerNodes.push([node, centralityDegree]);
+				});
+
+				centerNodes.forEach(function (item) {
+					return item[0].style('background-gradient-stop-colors', "white white red red");
+				});
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Tree height', "Tree height: " + centerNodes[0][1]);
+			} else {
+				var cycleEdge = leftEdges[0];
+				var cycleNodes = cy.collection();
+				var cycleEdges = cy.collection();
+				var currentNodeSrc = cycleEdge.source();
+				var currentNodeTgt = cycleEdge.target();
+				while (true) {
+					// going up from source
+					if (currentNodeSrc === currentNodeTgt) {
+						cycleNodes.merge(currentNodeSrc);
+						break;
+					}
+
+					var neighborEdgesSrc = currentNodeSrc.neighborhood('edge').and(tree);
+					var neighborNodesSrc = neighborEdgesSrc.sources().union(neighborEdgesSrc.targets()).difference(currentNodeSrc).difference(cycleNodes);
+
+					if (neighborNodesSrc === 0) break;
+
+					if (neighborNodesSrc.length > 1) {
+						while (true) {
+							// going up from target to next level
+							if (currentNodeSrc === currentNodeTgt) {
+								cycleNodes.merge(currentNodeSrc);
+								break;
+							}
+
+							var neighborEdgesTgt = currentNodeSrc.neighborhood('edge').and(tree);
+							var neighborNodesTgt = neighborEdgesTgt.sources().union(neighborEdgesTgt.targets()).difference(currentNodeTgt).difference(cycleNodes);
+
+							if (neighborNodesTgt.length === 0) break;
+
+							if (neighborNodesTgt.length > 1 || neighborNodesTgt.length === 0) {
+								// next level
+								break;
+							}
+
+							var _edge = currentNodeTgt.edgesWith(neighborNodesTgt[0]).and(neighborEdgesTgt);
+							cycleEdges.merge(_edge);
+							cycleNodes.merge(currentNodeTgt);
+							currentNodeTgt = neighborNodesTgt[0];
+						}
+					}
+
+					var edge = currentNodeSrc.edgesWith(neighborNodesSrc[0]).and(neighborEdgesSrc);
+					cycleEdges.merge(edge);
+					cycleNodes.merge(currentNodeSrc);
+					currentNodeSrc = neighborNodesSrc[0];
+				}
+
+				cycleEdges.merge(cycleEdge);
+				cycleNodes.style('background-gradient-stop-colors', 'white white red red');
+				cycleEdges.style('line-color', 'red');
+			}
 		}
 	}, {
 		key: "RecoverGraphFromVector",

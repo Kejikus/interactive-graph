@@ -79,19 +79,19 @@ export default {
 			type: "submenu",
 			submenu: [
 				{
-					label: 'BreadthFirstSearch',
+					label: 'Breadth-First Search',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BreadthFirstSearch),
 				},
 				{
-					label: 'Dijkstra',
+					label: 'Dijkstra algorithm',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Dijkstra),
 				},
 				{
-					label: 'WeightRadiusDiameterPower',
+					label: 'Weight, radius, diameter, degrees',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.WeightRadiusDiameterPower),
 				},
 				{
-					label: 'ColoringGraph',
+					label: 'Color graph',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.ColoringGraph),
 				},
 				{
@@ -99,12 +99,16 @@ export default {
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphConnectivity),
 				},
 				{
-					label: 'GraphAddition',
+					label: 'Add graph to full',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphAddition),
 				},
 				{
-					label: 'MinimumSpanningTree',
+					label: 'Show minimum spanning tree',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.MinimumSpanningTree),
+				},
+				{
+					label: 'Show minimum cycle/tree root',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.CycleProblem),
 				},
 			]
 		},

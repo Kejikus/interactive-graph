@@ -362,22 +362,22 @@ exports.default = {
 		label: "Theory of graph tasks",
 		type: "submenu",
 		submenu: [{
-			label: 'BreadthFirstSearch',
+			label: 'Breadth-First Search',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.BreadthFirstSearch);
 			}
 		}, {
-			label: 'Dijkstra',
+			label: 'Dijkstra algorithm',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.Dijkstra);
 			}
 		}, {
-			label: 'WeightRadiusDiameterPower',
+			label: 'Weight, radius, diameter, degrees',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.WeightRadiusDiameterPower);
 			}
 		}, {
-			label: 'ColoringGraph',
+			label: 'Color graph',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.ColoringGraph);
 			}
@@ -387,14 +387,19 @@ exports.default = {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphConnectivity);
 			}
 		}, {
-			label: 'GraphAddition',
+			label: 'Add graph to full',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.GraphAddition);
 			}
 		}, {
-			label: 'MinimumSpanningTree',
+			label: 'Show minimum spanning tree',
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.MinimumSpanningTree);
+			}
+		}, {
+			label: 'Show minimum cycle/tree root',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.CycleProblem);
 			}
 		}]
 	}, {

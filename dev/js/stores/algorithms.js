@@ -24,6 +24,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.GraphPlanarity, AlgorithmsStore.GraphPlanarity);
 		tasks.set(TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
 		tasks.set(TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
+		tasks.set(TaskTypeEnum.CycleProblem, AlgorithmsStore.CycleProblem);
 
 		return tasks;
 	}
@@ -325,15 +326,15 @@ class AlgorithmsStore {
 				groups.push(needToColor);
 		}
 
-		console.log(groups);
-
 		return {
 			chromaColor: index - 1,
 			groups: groups
 		};
 	}
 
-	static MinimumSpanningTree(cy) {
+	static MinimumSpanningTree(cy, colorGraph) {
+		colorGraph = colorGraph === undefined ? true : colorGraph;
+
 		const edges = cy.edges();
 		const nodes = cy.nodes();
 		const edgesCounter = new Map();
@@ -372,11 +373,98 @@ class AlgorithmsStore {
 			}
 		}
 
-		const src = resultEdges.sources();
-		const tgt = resultEdges.targets();
-		resultEdges.merge(src).merge(tgt);
-		resultEdges.style('background-gradient-stop-colors', `white white red red`);
-		resultEdges.style('line-color', 'red');
+		if (colorGraph) {
+			const src = resultEdges.sources();
+			const tgt = resultEdges.targets();
+			const resultColl = resultEdges.union(src).union(tgt);
+			resultColl.style('background-gradient-stop-colors', `white white red red`);
+			resultColl.style('line-color', 'red');
+		}
+
+		return resultEdges;
+	}
+
+	static CycleProblem(cy) {
+		const graphTreeEdges = AlgorithmsStore.MinimumSpanningTree(cy, false);
+		const leftEdges = cy.edges().difference(graphTreeEdges).sort((a, b) => a.data('weight') - b.data('weight'));
+		const tree = graphTreeEdges.union(graphTreeEdges.sources()).union(graphTreeEdges.targets());
+
+		if (leftEdges.length === 0) {
+			let centerNodes = [];
+			tree.filter('node').forEach(node => {
+				let centralityDegree = 0;
+				node.scratch('degreeC', 0);
+				const queue = [node];
+				const visited = cy.collection();
+				while (queue.length > 0) {
+					let currentNode = queue.shift();
+					const neighborEdges = currentNode.neighborhood('edge').and(tree);
+					const neighborNodes = neighborEdges.sources().union(neighborEdges.targets()).difference(currentNode).difference(visited);
+					neighborNodes.forEach(tgtNode => {
+						tgtNode.scratch('degreeC', currentNode.scratch('degreeC') + 1);
+						centralityDegree = Math.max(centralityDegree, currentNode.scratch('degreeC') + 1);
+						queue.push(tgtNode);
+					});
+					visited.merge(currentNode);
+				}
+				if (centerNodes.length === 0 || centerNodes[0][1] > centralityDegree) {
+					centerNodes = [[node, centralityDegree]];
+				}
+				if (centerNodes[0][1] === centralityDegree) centerNodes.push([node, centralityDegree]);
+			});
+
+			centerNodes.forEach(item => item[0].style('background-gradient-stop-colors', `white white red red`));
+			messager.send(msgTypes.showMessageBox, 'Tree height', `Tree height: ${centerNodes[0][1]}`);
+		} else {
+			const cycleEdge = leftEdges[0];
+			const cycleNodes = cy.collection();
+			const cycleEdges = cy.collection();
+			let currentNodeSrc = cycleEdge.source();
+			let currentNodeTgt = cycleEdge.target();
+			while (true) { // going up from source
+				if (currentNodeSrc === currentNodeTgt) {
+					cycleNodes.merge(currentNodeSrc);
+					break;
+				}
+
+				const neighborEdgesSrc = currentNodeSrc.neighborhood('edge').and(tree);
+				const neighborNodesSrc = neighborEdgesSrc.sources().union(neighborEdgesSrc.targets()).difference(currentNodeSrc).difference(cycleNodes);
+
+				if (neighborNodesSrc === 0) break;
+
+				if (neighborNodesSrc.length > 1) {
+					while (true) { // going up from target to next level
+						if (currentNodeSrc === currentNodeTgt) {
+							cycleNodes.merge(currentNodeSrc);
+							break;
+						}
+
+						const neighborEdgesTgt = currentNodeSrc.neighborhood('edge').and(tree);
+						const neighborNodesTgt = neighborEdgesTgt.sources().union(neighborEdgesTgt.targets()).difference(currentNodeTgt).difference(cycleNodes);
+
+						if (neighborNodesTgt.length === 0) break;
+
+						if (neighborNodesTgt.length > 1 || neighborNodesTgt.length === 0) { // next level
+							break;
+						}
+
+						const edge = currentNodeTgt.edgesWith(neighborNodesTgt[0]).and(neighborEdgesTgt);
+						cycleEdges.merge(edge);
+						cycleNodes.merge(currentNodeTgt);
+						currentNodeTgt = neighborNodesTgt[0];
+					}
+				}
+
+				const edge = currentNodeSrc.edgesWith(neighborNodesSrc[0]).and(neighborEdgesSrc);
+				cycleEdges.merge(edge);
+				cycleNodes.merge(currentNodeSrc);
+				currentNodeSrc = neighborNodesSrc[0];
+			}
+
+			cycleEdges.merge(cycleEdge);
+			cycleNodes.style('background-gradient-stop-colors', 'white white red red');
+			cycleEdges.style('line-color', 'red');
+		}
 	}
 
 	static RecoverGraphFromVector(cy) {

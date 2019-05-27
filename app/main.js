@@ -1740,7 +1740,8 @@ var AlgorithmsStore = function () {
 				result_collection.merge(short_edge);
 			}
 
-			result_collection.addClass('highlight');
+			result_collection.style('background-gradient-stop-colors', "white white red red");
+			result_collection.style('line-color', 'red');
 
 			console.log('short path: ', result.length - 1);
 			//  messager.send(msgTypes.showMessageBox, 'Short path', `Short path is ${path_lenght}`);
@@ -1813,7 +1814,6 @@ var AlgorithmsStore = function () {
 			paths.set(0, [startNode]);
 			frontier.push(startNode);
 			while (frontier.length > 0) {
-				// debugger;
 				if (current === endNode) break;
 				var current = frontier.shift();
 				// const incNodes = incidentNodes(current);
@@ -1871,8 +1871,6 @@ var AlgorithmsStore = function () {
 
 			result_collection.style('background-gradient-stop-colors', "white white red red");
 			result_collection.style('line-color', 'red');
-
-			console.log('paths: ', paths);
 		}
 	}, {
 		key: "AStar",
@@ -1953,7 +1951,6 @@ var AlgorithmsStore = function () {
 	}, {
 		key: "GraphConnectivity",
 		value: function GraphConnectivity(cy) {
-			console.log('graph connectivity');
 			var firstNode = cy.nodes()[0];
 
 			var frontier = [firstNode];
@@ -2038,7 +2035,7 @@ var AlgorithmsStore = function () {
 				}
 				colored.merge(needToColor);
 
-				var colors = ['#f44336', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#009688', '#4CAF50', '#CDDC39', '#FFEB3B', '#FF9800'];
+				var colors = ['#673AB7', '#f44336', '#9C27B0', '#3F51B5', '#2196F3', '#009688', '#4CAF50', '#CDDC39', '#FFEB3B', '#FF9800'];
 
 				if (index < colors.length && colorGraph) {
 					var color = colors[index++];

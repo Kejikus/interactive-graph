@@ -653,7 +653,7 @@ class AlgorithmsStore {
 			return;
 		}
 
-		debugger;
+		// debugger;
 		const dijkstraOut = new Map(dijkstra(cy, selected[0]));
 		if (dijkstraOut.get(selected[1]) !== Infinity) {
 			messager.send(msgTypes.showMessageBox, 'Input error', 'Select two nodes from two UNCONNECTED graphs and start again');
@@ -662,7 +662,7 @@ class AlgorithmsStore {
 
 		let graph1 = cy.collection().merge(selected[0]);
 		let graph2 = cy.collection().merge(selected[1]);
-		debugger;
+		// debugger;
 		while (true) {
 			const neighbours = graph1.neighborhood();
 			if (neighbours && neighbours.length === 0) break;
@@ -703,7 +703,7 @@ class AlgorithmsStore {
 		}
 
 
-		debugger;
+		// debugger;
 		const adjMatrix1 = amgdEncode({nodes: graph1.filter('node'), edges: graph1.filter('edge')}).content;
 		let adjMatrix2 = permute(amgdEncode({nodes: graph2.filter('node'), edges: graph2.filter('edge')}).content);
 		let isomorphic = undefined;

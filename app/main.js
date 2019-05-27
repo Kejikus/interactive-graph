@@ -2969,7 +2969,7 @@ var AlgorithmsStore = function () {
 				return;
 			}
 
-			debugger;
+			// debugger;
 			var dijkstraOut = new _map2.default((0, _algorithmMethods.dijkstra)(cy, selected[0]));
 			if (dijkstraOut.get(selected[1]) !== Infinity) {
 				_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', 'Select two nodes from two UNCONNECTED graphs and start again');
@@ -2978,7 +2978,7 @@ var AlgorithmsStore = function () {
 
 			var graph1 = cy.collection().merge(selected[0]);
 			var graph2 = cy.collection().merge(selected[1]);
-			debugger;
+			// debugger;
 			while (true) {
 				var neighbours = graph1.neighborhood();
 				if (neighbours && neighbours.length === 0) break;
@@ -3060,7 +3060,7 @@ var AlgorithmsStore = function () {
 				return ret;
 			}
 
-			debugger;
+			// debugger;
 			var adjMatrix1 = (0, _saveFileTools.amgdEncode)({ nodes: graph1.filter('node'), edges: graph1.filter('edge') }).content;
 			var adjMatrix2 = permute((0, _saveFileTools.amgdEncode)({ nodes: graph2.filter('node'), edges: graph2.filter('edge') }).content);
 			var isomorphic = undefined;

@@ -328,7 +328,7 @@ class AlgorithmsStore {
 
 		return {
 			chromaColor: index - 1,
-			groups:      groups
+			groups: groups
 		};
 	}
 

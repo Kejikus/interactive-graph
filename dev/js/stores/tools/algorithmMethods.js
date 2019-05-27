@@ -2,7 +2,7 @@ export function dijkstra(cy, rootNode) {
 	const weight = (edge) => edge.data('weight');
 	const currentSum = ele => {
 		const sum = ele.scratch("_dijkstra_sum_weight");
-		return sum === undefined ? Infinity : sum;
+		return (sum === undefined || sum === null) ? Infinity : sum;
 	};
 	const setSum = (ele, sum) => ele.scratch("_dijkstra_sum_weight", sum);
 
@@ -17,7 +17,7 @@ export function dijkstra(cy, rootNode) {
 				.difference(`[target="${currentNode.data('id')}"][?oriented]`)
 				.min(weight).ele;
 			if (shortestEdge1 !== undefined) {
-				const newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
+				const newWeight = weight(shortestEdge1) + (currentSum(currentNode) === Infinity ? 0 : currentSum(currentNode));
 				setSum(node, Math.min(currentSum(node), newWeight));
 			} else {
 				neighborNodes = neighborNodes.difference(node);

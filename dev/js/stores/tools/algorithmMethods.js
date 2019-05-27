@@ -41,6 +41,10 @@ export function dijkstra(cy, rootNode) {
 	return pathLengthVector;
 }
 
+export function isValid(weight) {
+	return weight > 20;
+}
+
 export function getArrayOfKeysFromMap(map) {
 	const keys = [];
 	map.forEach((value, key) => {

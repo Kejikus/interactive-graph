@@ -10,6 +10,7 @@ import {
 	getRandomColor,
 	incidentEdges,
 	incidentNodes,
+	isValid,
 } from "./tools/algorithmMethods";
 import {amgdEncode} from "../mainComponents/saveFileTools";
 
@@ -167,16 +168,19 @@ class AlgorithmsStore {
 		while (frontier.length > 0) {
 			if (finished === endNode) break;
 			let current = frontier.shift();
+
 			// const incNodes = incidentNodes(current);
 			const incEdges = incidentEdges(current);
 			for (let i = 0; i < incEdges.length; ++i) {
 				let node = null;
+				if (isValid(ncEdges[i].data().weight)) continue;
 				let values = paths.get(incEdges[i].data().weight);
 				if (values === undefined) {
 					values = [];
 				}
 				if (incEdges[i].source() === current) {
 					node = incEdges[i].target();
+
 					if (visited.includes(node)) continue;
 					values.unshift(node);
 					paths.set(incEdges[i].data().weight, values);

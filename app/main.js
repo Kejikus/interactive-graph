@@ -2463,16 +2463,19 @@ var AlgorithmsStore = function () {
 			while (frontier.length > 0) {
 				if (finished === endNode) break;
 				var current = frontier.shift();
+
 				// const incNodes = incidentNodes(current);
 				var incEdges = (0, _algorithmMethods.incidentEdges)(current);
 				for (var i = 0; i < incEdges.length; ++i) {
 					var node = null;
+					if ((0, _algorithmMethods.isValid)(ncEdges[i].data().weight)) continue;
 					var values = paths.get(incEdges[i].data().weight);
 					if (values === undefined) {
 						values = [];
 					}
 					if (incEdges[i].source() === current) {
 						node = incEdges[i].target();
+
 						if (visited.includes(node)) continue;
 						values.unshift(node);
 						paths.set(incEdges[i].data().weight, values);
@@ -3257,6 +3260,7 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 exports.dijkstra = dijkstra;
+exports.isValid = isValid;
 exports.getArrayOfKeysFromMap = getArrayOfKeysFromMap;
 exports.nodeDegree = nodeDegree;
 exports.incidentNodes = incidentNodes;
@@ -3271,7 +3275,7 @@ function dijkstra(cy, rootNode) {
 	};
 	var currentSum = function currentSum(ele) {
 		var sum = ele.scratch("_dijkstra_sum_weight");
-		return sum === undefined ? Infinity : sum;
+		return sum === undefined || sum === null ? Infinity : sum;
 	};
 	var setSum = function setSum(ele, sum) {
 		return ele.scratch("_dijkstra_sum_weight", sum);
@@ -3287,7 +3291,7 @@ function dijkstra(cy, rootNode) {
 		neighborNodes.forEach(function (node) {
 			var shortestEdge1 = currentNode.edgesWith(node).difference("[target=\"" + currentNode.data('id') + "\"][?oriented]").min(weight).ele;
 			if (shortestEdge1 !== undefined) {
-				var newWeight = weight(shortestEdge1) + (currentSum(currentNode) || 0);
+				var newWeight = weight(shortestEdge1) + (currentSum(currentNode) === Infinity ? 0 : currentSum(currentNode));
 				setSum(node, Math.min(currentSum(node), newWeight));
 			} else {
 				neighborNodes = neighborNodes.difference(node);
@@ -3321,6 +3325,10 @@ function dijkstra(cy, rootNode) {
 	});
 
 	return pathLengthVector;
+}
+
+function isValid(weight) {
+	return weight > 20;
 }
 
 function getArrayOfKeysFromMap(map) {

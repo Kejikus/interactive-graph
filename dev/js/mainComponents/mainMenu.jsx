@@ -79,19 +79,19 @@ export default {
 			type: "submenu",
 			submenu: [
 				{
-					label: 'Breadth-First Search',
+					label: 'BreadthFirstSearch',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BreadthFirstSearch),
 				},
 				{
-					label: 'Dijkstra algorithm',
+					label: 'Dijkstra',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.Dijkstra),
 				},
 				{
-					label: 'Weight, radius, diameter, degrees',
+					label: 'WeightRadiusDiameterPower',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.WeightRadiusDiameterPower),
 				},
 				{
-					label: 'Color graph',
+					label: 'ColoringGraph',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.ColoringGraph),
 				},
 				{
@@ -99,16 +99,16 @@ export default {
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphConnectivity),
 				},
 				{
-					label: 'Add graph to full',
+					label: 'GraphAddition',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphAddition),
 				},
 				{
-					label: 'Show minimum spanning tree',
+					label: 'MinimumSpanningTree',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.MinimumSpanningTree),
 				},
 				{
-					label: 'Show minimum cycle/tree root',
-					click: () => ipcSend("execute-algorithm", TaskTypeEnum.CycleProblem),
+					label: 'BestFirstSearch',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BestFirstSearch),
 				},
 				// {
 				// 	label: 'Are two graphs isomorphic',

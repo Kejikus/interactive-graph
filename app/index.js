@@ -401,6 +401,21 @@ exports.default = {
 			click: function click() {
 				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.BestFirstSearch);
 			}
+		}, {
+			label: 'AStar',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.AStar);
+			}
+		}, {
+			label: 'TheProblemOfWeddings',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.TheProblemOfWeddings);
+			}
+		}, {
+			label: 'CycleProblem',
+			click: function click() {
+				return ipcSend("execute-algorithm", _enums.TaskTypeEnum.CycleProblem);
+			}
 		}]
 	}, {
 		label: "About",

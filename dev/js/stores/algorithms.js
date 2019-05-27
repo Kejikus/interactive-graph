@@ -163,8 +163,9 @@ class AlgorithmsStore {
 		const cameFrom = new Map();
 		paths.set(0, [startNode]);
 		frontier.push(startNode);
+		let finished = startNode;
 		while (frontier.length > 0) {
-			if (current === endNode) break;
+			if (finished === endNode) break;
 			let current = frontier.shift();
 			// const incNodes = incidentNodes(current);
 			const incEdges = incidentEdges(current);
@@ -195,8 +196,8 @@ class AlgorithmsStore {
 					}
 					frontier.push(paths.values().next().value[0]);
 					if (node === endNode) {
-						current = node;
-						break;
+						finished = node;
+						//break;
 					}
 				}
 				paths = new Map([...paths.entries()].sort((a, b) => a[0] - b[0]));
@@ -245,10 +246,10 @@ class AlgorithmsStore {
 			if (current === endNode) break;
 			let current = frontier.shift();
 			// const incNodes = incidentNodes(current);
+			const weight = paths.keys().next().value;
 			const incEdges = incidentEdges(current);
 			for (let i = 0; i < incEdges.length; ++i) {
 				let node = null;
-				let weight = paths.keys().next().value;
 				let values = paths.get(incEdges[i].data().weight);
 				if (values === undefined) {
 					values = [];
@@ -273,14 +274,10 @@ class AlgorithmsStore {
 						paths.delete(paths.keys().next().value);
 					}
 					frontier.push(paths.values().next().value[0]);
-					if (node === endNode) {
-						current = node;
-						break;
-					}
+					if (node === endNode) current = node;
 				}
 				paths = new Map([...paths.entries()].sort((a, b) => a[0] - b[0]));
 			}
-			// debugger;
 		}
 
 		let current_node = endNode;
@@ -418,6 +415,34 @@ class AlgorithmsStore {
 		} else {
 			console.log('connected');
 		}
+
+		let sharnir = 0;
+		let sharnirNodes = cy.collection();
+		let mostEdges = cy.collection();
+		for (let i = 0; i < cy.nodes().length; ++i) {
+			if (cy.nodes()[i].neighborhood('edge').length === 1) {
+				sharnir += 1;
+				sharnirNodes.merge(cy.nodes()[i].neighborhood('node'));
+				mostEdges.merge(cy.nodes()[i].neighborhood('edge'));
+			}
+		}
+
+		// const graph = cy.collection();
+		// graph.merge(cy.nodes()[0]);
+		// while (true) {
+		// 	const neighbours = graph.neighborhood();
+		// 	if (neighbours || neighbours.length === 0) break;
+		// 	graph.merge(neighbours);
+		// }
+
+		sharnirNodes.style('background-gradient-stop-colors', `white white red red`);
+		sharnirNodes.style('line-color', 'red');
+
+		mostEdges.style('background-gradient-stop-colors', `white white black black`);
+		mostEdges.style('line-color', 'black');
+
+		// graph.style('background-gradient-stop-colors', `white white blue orange`);
+		// graph.style('line-color', 'blue');
 	}
 
 	static ColoringGraph(cy, colorGraph) {

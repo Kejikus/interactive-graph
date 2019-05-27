@@ -2459,8 +2459,9 @@ var AlgorithmsStore = function () {
 			var cameFrom = new _map2.default();
 			paths.set(0, [startNode]);
 			frontier.push(startNode);
+			var finished = startNode;
 			while (frontier.length > 0) {
-				if (current === endNode) break;
+				if (finished === endNode) break;
 				var current = frontier.shift();
 				// const incNodes = incidentNodes(current);
 				var incEdges = (0, _algorithmMethods.incidentEdges)(current);
@@ -2491,8 +2492,8 @@ var AlgorithmsStore = function () {
 						}
 						frontier.push(paths.values().next().value[0]);
 						if (node === endNode) {
-							current = node;
-							break;
+							finished = node;
+							//break;
 						}
 					}
 					paths = new _map2.default([].concat((0, _toConsumableArray3.default)(paths.entries())).sort(function (a, b) {
@@ -2546,10 +2547,10 @@ var AlgorithmsStore = function () {
 				if (current === endNode) break;
 				var current = frontier.shift();
 				// const incNodes = incidentNodes(current);
+				var weight = paths.keys().next().value;
 				var incEdges = (0, _algorithmMethods.incidentEdges)(current);
 				for (var i = 0; i < incEdges.length; ++i) {
 					var node = null;
-					var weight = paths.keys().next().value;
 					var values = paths.get(incEdges[i].data().weight);
 					if (values === undefined) {
 						values = [];
@@ -2574,16 +2575,12 @@ var AlgorithmsStore = function () {
 							paths.delete(paths.keys().next().value);
 						}
 						frontier.push(paths.values().next().value[0]);
-						if (node === endNode) {
-							current = node;
-							break;
-						}
+						if (node === endNode) current = node;
 					}
 					paths = new _map2.default([].concat((0, _toConsumableArray3.default)(paths.entries())).sort(function (a, b) {
 						return a[0] - b[0];
 					}));
 				}
-				// debugger;
 			}
 
 			var current_node = endNode;
@@ -2726,6 +2723,34 @@ var AlgorithmsStore = function () {
 			} else {
 				console.log('connected');
 			}
+
+			var sharnir = 0;
+			var sharnirNodes = cy.collection();
+			var mostEdges = cy.collection();
+			for (var _i4 = 0; _i4 < cy.nodes().length; ++_i4) {
+				if (cy.nodes()[_i4].neighborhood('edge').length === 1) {
+					sharnir += 1;
+					sharnirNodes.merge(cy.nodes()[_i4].neighborhood('node'));
+					mostEdges.merge(cy.nodes()[_i4].neighborhood('edge'));
+				}
+			}
+
+			// const graph = cy.collection();
+			// graph.merge(cy.nodes()[0]);
+			// while (true) {
+			// 	const neighbours = graph.neighborhood();
+			// 	if (neighbours || neighbours.length === 0) break;
+			// 	graph.merge(neighbours);
+			// }
+
+			sharnirNodes.style('background-gradient-stop-colors', "white white red red");
+			sharnirNodes.style('line-color', 'red');
+
+			mostEdges.style('background-gradient-stop-colors', "white white black black");
+			mostEdges.style('line-color', 'black');
+
+			// graph.style('background-gradient-stop-colors', `white white blue orange`);
+			// graph.style('line-color', 'blue');
 		}
 	}, {
 		key: "ColoringGraph",
@@ -2751,13 +2776,13 @@ var AlgorithmsStore = function () {
 
 			var groups = [];
 
-			for (var _i4 = 0; _i4 < keys.length; ++_i4) {
-				var elem = keys[_i4];
+			for (var _i5 = 0; _i5 < keys.length; ++_i5) {
+				var elem = keys[_i5];
 				var needToColor = cy.collection();
 				if (colored.and(elem).length === 0) {
 					// elem is not colored
 					needToColor.merge(elem);
-					for (var j = _i4 + 1; j < sortMap.size; ++j) {
+					for (var j = _i5 + 1; j < sortMap.size; ++j) {
 						if (keys[j].neighborhood('node').and(elem).length === 0) {
 							// elem not bound
 							needToColor.merge(keys[j]);
@@ -2803,17 +2828,17 @@ var AlgorithmsStore = function () {
 			var k = (0, _algorithmMethods.getArrayOfKeysFromMap)(sortMap);
 			var keys = k.reverse();
 			var underTree = [];
-			for (var _i5 = 0; _i5 < nodes.length; ++_i5) {
-				underTree.push([nodes[_i5]]);
+			for (var _i6 = 0; _i6 < nodes.length; ++_i6) {
+				underTree.push([nodes[_i6]]);
 			}
 
 			var resultEdges = cy.collection();
-			for (var _i6 = 0; _i6 < keys.length; ++_i6) {
+			for (var _i7 = 0; _i7 < keys.length; ++_i7) {
 				var firstIndex = 0;
 				var secondIndex = 0;
 				for (var j = 0; j < underTree.length; ++j) {
-					var first = keys[_i6].source();
-					var second = keys[_i6].target();
+					var first = keys[_i7].source();
+					var second = keys[_i7].target();
 					if (underTree[j].includes(first)) {
 						firstIndex = j;
 					}
@@ -2823,9 +2848,9 @@ var AlgorithmsStore = function () {
 				}
 
 				if (firstIndex !== secondIndex) {
-					resultEdges.merge(keys[_i6]);
-					for (var _i7 = 0; _i7 < underTree[secondIndex].length; ++_i7) {
-						underTree[firstIndex].push(underTree[secondIndex][_i7]);
+					resultEdges.merge(keys[_i7]);
+					for (var _i8 = 0; _i8 < underTree[secondIndex].length; ++_i8) {
+						underTree[firstIndex].push(underTree[secondIndex][_i8]);
 					}
 					underTree.splice(secondIndex, 1);
 				}
@@ -3052,9 +3077,9 @@ var AlgorithmsStore = function () {
 				var ret = [];
 				for (var i = 0; i < matrix.length; i++) {
 					ret.push([]);
-				}for (var _i8 = 0; _i8 < matrix.length; _i8++) {
+				}for (var _i9 = 0; _i9 < matrix.length; _i9++) {
 					for (var j = 0; j < matrix.length; j++) {
-						ret[j].push(matrix[_i8][j]);
+						ret[j].push(matrix[_i9][j]);
 					}
 				}
 				return ret;
@@ -3179,12 +3204,12 @@ var AlgorithmsStore = function () {
 						return;
 					}
 
-					for (var _i9 = srcIdx + 1; _i9 < currentDegree; _i9++) {
-						if (degrees[_i9] === 0) {
+					for (var _i10 = srcIdx + 1; _i10 < currentDegree; _i10++) {
+						if (degrees[_i10] === 0) {
 							_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', "Invalid degree vector, can't place all edges");
 							return;
 						}
-						degrees[_i9]--;
+						degrees[_i10]--;
 						var _id = -1;
 						_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextId, function (i) {
 							return _id = i;
@@ -3196,7 +3221,7 @@ var AlgorithmsStore = function () {
 								data: {
 									id: _id,
 									source: nodeIds[srcIdx],
-									target: nodeIds[_i9],
+									target: nodeIds[_i10],
 									weight: 1
 								}
 							}

@@ -110,6 +110,18 @@ export default {
 					label: 'BestFirstSearch',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.BestFirstSearch),
 				},
+				{
+					label: 'AStar',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.AStar),
+				},
+				{
+					label: 'TheProblemOfWeddings',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.TheProblemOfWeddings),
+				},
+				{
+					label: 'CycleProblem',
+					click: () => ipcSend("execute-algorithm", TaskTypeEnum.CycleProblem),
+				},
 			]
 		},
 		{

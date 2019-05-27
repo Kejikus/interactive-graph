@@ -130,8 +130,11 @@ export default class Graph extends Component {
 			);
 		});
 
-		this.cy.on('add move remove select', () => {
-			this.cy.$('edge, node[nodeIdx]').removeStyle();
+		this.cy.on('add move remove', () => {
+			const col = this.cy.$('edge, node[nodeIdx]');
+			col.removeStyle();
+			col.select();
+			col.unselect();
 		});
 
 		// const recalculateNodeWeight = node => {
@@ -362,6 +365,7 @@ export default class Graph extends Component {
 				}
 			};
 			this.toolbar.current.showMessage('Click on the free space to add node there');
+			this.cy.resize();
 			this.cy.on('tap', this.state.graphOnClick);
 		} else {
 			resetMode();

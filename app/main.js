@@ -363,8 +363,11 @@ var Graph = function (_Component) {
 				_rendererMessager.messager.send(_rendererMessager.msgTypes.matrixSetData, _this2.cy.nodes().difference('[^nodeIdx]').jsons(), _this2.cy.edges().jsons());
 			});
 
-			this.cy.on('add move remove select', function () {
-				_this2.cy.$('edge, node[nodeIdx]').removeStyle();
+			this.cy.on('add move remove', function () {
+				var col = _this2.cy.$('edge, node[nodeIdx]');
+				col.removeStyle();
+				col.select();
+				col.unselect();
 			});
 
 			// const recalculateNodeWeight = node => {
@@ -610,6 +613,7 @@ var Graph = function (_Component) {
 					}
 				};
 				this.toolbar.current.showMessage('Click on the free space to add node there');
+				this.cy.resize();
 				this.cy.on('tap', this.state.graphOnClick);
 			} else {
 				resetMode();
@@ -1917,8 +1921,9 @@ var AlgorithmsStore = function () {
 		}
 	}, {
 		key: "ColoringGraph",
-		value: function ColoringGraph(cy) {
+		value: function ColoringGraph(cy, colorGraph) {
 			var nodes = cy.nodes();
+			colorGraph = colorGraph === undefined ? true : colorGraph;
 
 			var edgesCounter = new _map2.default();
 
@@ -1936,30 +1941,44 @@ var AlgorithmsStore = function () {
 				keys.push(key);
 			});
 
+			var groups = [];
+
 			for (var _i2 = 0; _i2 < keys.length; ++_i2) {
 				var elem = keys[_i2];
 				var needToColor = cy.collection();
-				if (!(colored.and(elem).length > 0)) {
+				if (colored.and(elem).length === 0) {
+					// elem is not colored
 					needToColor.merge(elem);
 					for (var j = _i2 + 1; j < sortMap.size; ++j) {
-						if ((0, _algorithmMethods.nonIncidentNodes)(keys[j]).and(elem).length > 0) {
+						if (keys[j].neighborhood('node').and(elem).length === 0) {
+							// elem not bound
 							needToColor.merge(keys[j]);
 						}
 					}
 				}
 				colored.merge(needToColor);
+
 				var colors = ['#f44336', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#009688', '#4CAF50', '#CDDC39', '#FFEB3B', '#FF9800'];
 
-				if (index < colors.length) {
+				if (index < colors.length && colorGraph) {
 					var color = colors[index++];
 					needToColor.style('background-gradient-stop-colors', "white white " + color + " " + color);
 				} else {
-					var _color = getRandomColor();
-					needToColor.style('background-gradient-stop-colors', "white white " + _color + " " + _color);
+					index++;
+					if (colorGraph) {
+						var _color = (0, _algorithmMethods.getRandomColor)();
+						needToColor.style('background-gradient-stop-colors', "white white " + _color + " " + _color);
+					}
 				}
-
-				return index - 1;
+				if (needToColor.length > 0) groups.push(needToColor);
 			}
+
+			console.log(groups);
+
+			return {
+				chromaColor: index - 1,
+				groups: groups
+			};
 		}
 	}, {
 		key: "MinimumSpanningTree",
@@ -2003,6 +2022,10 @@ var AlgorithmsStore = function () {
 					underTree.splice(secondIndex, 1);
 				}
 			}
+
+			var src = resultEdges.sources();
+			var tgt = resultEdges.targets();
+			resultEdges.merge(src).merge(tgt);
 			resultEdges.style('background-gradient-stop-colors', "white white red red");
 			resultEdges.style('line-color', 'red');
 		}
@@ -2088,6 +2111,7 @@ var AlgorithmsStore = function () {
 				actionList.push({ name: 'layout', param: { name: 'circle' } });
 
 				_rendererMessager.messager.send(_rendererMessager.msgTypes.graphURDo, actionList);
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Recovery history', history);
 			});
 		}
 	}]);

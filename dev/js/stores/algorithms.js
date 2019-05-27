@@ -6,7 +6,7 @@ import {
 	generateVectorText,
 	nodeDegree,
 	nonIncidentNodes,
-	getArrayOfKeysFromMap
+	getArrayOfKeysFromMap, getRandomColor
 } from "./tools/algorithmMethods";
 
 export class InitAlgorithms {
@@ -264,8 +264,9 @@ class AlgorithmsStore {
 		}
 	}
 
-	static ColoringGraph(cy) {
+	static ColoringGraph(cy, colorGraph) {
 		const nodes = cy.nodes();
+		colorGraph = colorGraph === undefined ? true : colorGraph;
 
 		const edgesCounter = new Map();
 
@@ -281,18 +282,21 @@ class AlgorithmsStore {
 			keys.push(key);
 		});
 
+		const groups = [];
+
 		for (let i = 0; i < keys.length; ++i) {
 			const elem = keys[i];
 			let needToColor = cy.collection();
-			if (!(colored.and(elem).length > 0)) {
+			if (colored.and(elem).length === 0) { // elem is not colored
 				needToColor.merge(elem);
 				for (let j = i + 1; j < sortMap.size; ++j) {
-					if (nonIncidentNodes(keys[j]).and(elem).length > 0) {
+					if (keys[j].neighborhood('node').and(elem).length === 0) { // elem not bound
 						needToColor.merge(keys[j]);
 					}
 				}
 			}
 			colored.merge(needToColor);
+
 			const colors = [
 				'#f44336',
 				'#9C27B0',
@@ -306,17 +310,27 @@ class AlgorithmsStore {
 				'#FF9800',
 			];
 
-			if (index < colors.length) {
+			if (index < colors.length && colorGraph) {
 				const color = colors[index++];
 				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
 			}
 			else {
-				const color = getRandomColor();
-				needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
+				index++;
+				if (colorGraph) {
+					const color = getRandomColor();
+					needToColor.style('background-gradient-stop-colors', `white white ${color} ${color}`);
+				}
 			}
-
-			return index - 1;
+			if (needToColor.length > 0)
+				groups.push(needToColor);
 		}
+
+		console.log(groups);
+
+		return {
+			chromaColor: index - 1,
+			groups: groups
+		};
 	}
 
 	static MinimumSpanningTree(cy) {
@@ -357,6 +371,10 @@ class AlgorithmsStore {
 				underTree.splice(secondIndex, 1);
 			}
 		}
+
+		const src = resultEdges.sources();
+		const tgt = resultEdges.targets();
+		resultEdges.merge(src).merge(tgt);
 		resultEdges.style('background-gradient-stop-colors', `white white red red`);
 		resultEdges.style('line-color', 'red');
 	}
@@ -431,8 +449,7 @@ class AlgorithmsStore {
 			actionList.push({name: 'layout', param: {name: 'circle'}});
 
 			messager.send(msgTypes.graphURDo, actionList);
-
-
+			messager.send(msgTypes.showMessageBox, 'Recovery history', history);
 		});
 	}
 }

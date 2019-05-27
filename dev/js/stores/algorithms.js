@@ -30,6 +30,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
 		tasks.set(TaskTypeEnum.CycleProblem, AlgorithmsStore.CycleProblem);
 		tasks.set(TaskTypeEnum.GraphIsomorphism, AlgorithmsStore.GraphIsomorphism);
+		tasks.set(TaskTypeEnum.TheProblemOfWeddings, AlgorithmsStore.TheProblemOfWeddings);
 
 		return tasks;
 	}
@@ -540,6 +541,27 @@ class AlgorithmsStore {
 			cycleNodes.style('background-gradient-stop-colors', 'white white red red');
 			cycleEdges.style('line-color', 'red');
 		}
+	}
+
+	static TheProblemOfWeddings(cy) {
+		let coloring = AlgorithmsStore.ColoringGraph(cy);
+		if (coloring.groups.length !== 2) {
+			messager.send(msgTypes.showMessageBox, 'Error', 'Graph must be bipartite');
+			return;
+		}
+
+		let selected = cy.$(':selected');
+		const valid = selected.length === 1 && selected[0].isNode();
+		if (!valid) {
+			messager.send(msgTypes.showMessageBox, 'Error', 'Select one node in one part');
+			return;
+		}
+
+		const validGraph = (coloring.groups[0].and(selected).length > 0 && coloring.groups[0].length <= coloring.groups[1].length) ||
+			(coloring.groups[1].and(selected).length > 0 && coloring.groups[1].length <= coloring.groups[0].length);
+
+		if (validGraph) messager.send(msgTypes.showMessageBox, 'Success', 'Graph requirements are met');
+		else messager.send(msgTypes.showMessageBox, 'Failure', 'Graph requirements are NOT met');
 	}
 
 	static GraphIsomorphism(cy) {

@@ -2316,6 +2316,7 @@ var InitAlgorithms = exports.InitAlgorithms = function () {
 			tasks.set(_enums.TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
 			tasks.set(_enums.TaskTypeEnum.CycleProblem, AlgorithmsStore.CycleProblem);
 			tasks.set(_enums.TaskTypeEnum.GraphIsomorphism, AlgorithmsStore.GraphIsomorphism);
+			tasks.set(_enums.TaskTypeEnum.TheProblemOfWeddings, AlgorithmsStore.TheProblemOfWeddings);
 
 			return tasks;
 		}
@@ -2852,6 +2853,26 @@ var AlgorithmsStore = function () {
 			}
 		}
 	}, {
+		key: "TheProblemOfWeddings",
+		value: function TheProblemOfWeddings(cy) {
+			var coloring = AlgorithmsStore.ColoringGraph(cy);
+			if (coloring.groups.length !== 2) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Error', 'Graph must be bipartite');
+				return;
+			}
+
+			var selected = cy.$(':selected');
+			var valid = selected.length === 1 && selected[0].isNode();
+			if (!valid) {
+				_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Error', 'Select one node in one part');
+				return;
+			}
+
+			var validGraph = coloring.groups[0].and(selected).length > 0 && coloring.groups[0].length <= coloring.groups[1].length || coloring.groups[1].and(selected).length > 0 && coloring.groups[1].length <= coloring.groups[0].length;
+
+			if (validGraph) _rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Success', 'Graph requirements are met');else _rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Failure', 'Graph requirements are NOT met');
+		}
+	}, {
 		key: "GraphIsomorphism",
 		value: function GraphIsomorphism(cy) {
 			var selected = cy.$(':selected');
@@ -2946,9 +2967,9 @@ var AlgorithmsStore = function () {
 				var ret = [];
 				for (var i = 0; i < matrix.length; i++) {
 					ret.push([]);
-				}for (var _i6 = 0; _i6 < matrix.length; _i6++) {
+				}for (var _i7 = 0; _i7 < matrix.length; _i7++) {
 					for (var j = 0; j < matrix.length; j++) {
-						ret[j].push(matrix[_i6][j]);
+						ret[j].push(matrix[_i7][j]);
 					}
 				}
 				return ret;
@@ -3073,12 +3094,12 @@ var AlgorithmsStore = function () {
 						return;
 					}
 
-					for (var _i7 = srcIdx + 1; _i7 < currentDegree; _i7++) {
-						if (degrees[_i7] === 0) {
+					for (var _i8 = srcIdx + 1; _i8 < currentDegree; _i8++) {
+						if (degrees[_i8] === 0) {
 							_rendererMessager.messager.send(_rendererMessager.msgTypes.showMessageBox, 'Input error', "Invalid degree vector, can't place all edges");
 							return;
 						}
-						degrees[_i7]--;
+						degrees[_i8]--;
 						var _id = -1;
 						_rendererMessager.messager.send(_rendererMessager.msgTypes.graphGetNextId, function (i) {
 							return _id = i;
@@ -3090,7 +3111,7 @@ var AlgorithmsStore = function () {
 								data: {
 									id: _id,
 									source: nodeIds[srcIdx],
-									target: nodeIds[_i7],
+									target: nodeIds[_i8],
 									weight: 1
 								}
 							}
@@ -3271,7 +3292,7 @@ function generateVectorText(vector, prependText) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-/* harmony default export */ __webpack_exports__["default"] = ("node {\n    text-halign: center;\n    text-valign: center;\n    /*text-background-opacity: 1;*/\n    /*text-background-color: white;*/\n    /*text-background-shape: roundrectangle;*/\n    /*text-background-padding: 2px;*/\n    font-family: Consolas;\n    color: black;\n    background-fill: radial-gradient;\n    background-gradient-stop-colors: white white gray gray;\n    background-gradient-stop-positions: 0% 30% 50% 100%;\n}\n\nnode:selected {\n    background-gradient-stop-colors: white white blue blue;\n}\n\nnode[nodeIdx] {\n    label: data(nodeIdx);\n}\n\nnode.ghost {\n    label: none;\n    background-color: rgba(123, 123, 123, 0.3);\n}\n\nnode.eh-handle {\n    border-width: 2px;\n    border-style: solid;\n    border-color: red;\n}\n\nedge {\n    curve-style: bezier;\n    text-background-opacity: 1;\n    text-background-color: white;\n    text-background-shape: roundrectangle;\n    text-rotation: autorotate;\n    text-background-padding: 1px;\n    text-halign: center;\n    text-valign: top;\n    font-family: Consolas;\n}\n\nedge:selected {\n    z-index: 1;\n}\n\nedge.node-selected {\n    line-color: blue;\n    target-arrow-color: blue;\n}\n\nedge.eh-ghost-edge.eh-preview-active {\n    width: 0;\n}\n\nedge[weight] {\n    label: data(weight);\n}\n\nedge[?oriented] {\n    target-arrow-shape: triangle;\n}\n");
+/* harmony default export */ __webpack_exports__["default"] = ("node {\r\n    text-halign: center;\r\n    text-valign: center;\r\n    /*text-background-opacity: 1;*/\r\n    /*text-background-color: white;*/\r\n    /*text-background-shape: roundrectangle;*/\r\n    /*text-background-padding: 2px;*/\r\n    font-family: Consolas;\r\n    color: black;\r\n    background-fill: radial-gradient;\r\n    background-gradient-stop-colors: white white gray gray;\r\n    background-gradient-stop-positions: 0% 30% 50% 100%;\r\n}\r\n\r\nnode:selected {\r\n    background-gradient-stop-colors: white white blue blue;\r\n}\r\n\r\nnode[nodeIdx] {\r\n    label: data(nodeIdx);\r\n}\r\n\r\nnode.ghost {\r\n    label: none;\r\n    background-color: rgba(123, 123, 123, 0.3);\r\n}\r\n\r\nnode.eh-handle {\r\n    border-width: 2px;\r\n    border-style: solid;\r\n    border-color: red;\r\n}\r\n\r\nedge {\r\n    curve-style: bezier;\r\n    text-background-opacity: 1;\r\n    text-background-color: white;\r\n    text-background-shape: roundrectangle;\r\n    text-rotation: autorotate;\r\n    text-background-padding: 1px;\r\n    text-halign: center;\r\n    text-valign: top;\r\n    font-family: Consolas;\r\n}\r\n\r\nedge:selected {\r\n    z-index: 1;\r\n}\r\n\r\nedge.node-selected {\r\n    line-color: blue;\r\n    target-arrow-color: blue;\r\n}\r\n\r\nedge.eh-ghost-edge.eh-preview-active {\r\n    width: 0;\r\n}\r\n\r\nedge[weight] {\r\n    label: data(weight);\r\n}\r\n\r\nedge[?oriented] {\r\n    target-arrow-shape: triangle;\r\n}\r\n");
 
 /***/ }),
 

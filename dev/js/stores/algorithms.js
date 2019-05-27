@@ -8,6 +8,7 @@ import {
 	nonIncidentNodes,
 	getArrayOfKeysFromMap, getRandomColor
 } from "./tools/algorithmMethods";
+import {amgdEncode} from "../mainComponents/saveFileTools";
 
 export class InitAlgorithms {
 	static create() {
@@ -25,6 +26,7 @@ export class InitAlgorithms {
 		tasks.set(TaskTypeEnum.MinimumSpanningTree, AlgorithmsStore.MinimumSpanningTree);
 		tasks.set(TaskTypeEnum.RecoverGraphFromVector, AlgorithmsStore.RecoverGraphFromVector);
 		tasks.set(TaskTypeEnum.CycleProblem, AlgorithmsStore.CycleProblem);
+		tasks.set(TaskTypeEnum.GraphIsomorphism, AlgorithmsStore.GraphIsomorphism);
 
 		return tasks;
 	}
@@ -465,6 +467,91 @@ class AlgorithmsStore {
 			cycleNodes.style('background-gradient-stop-colors', 'white white red red');
 			cycleEdges.style('line-color', 'red');
 		}
+	}
+
+	static GraphIsomorphism(cy) {
+		const selected = cy.$(':selected');
+		const selectedNodes = cy.$('node:selected');
+		let validSelect = selected.length === 2 && selected.length === selectedNodes.length;
+
+		if (!validSelect) {
+			messager.send(msgTypes.showMessageBox, 'Input error', 'Select two nodes from two unconnected graphs and start again');
+			return;
+		}
+
+		debugger;
+		const dijkstraOut = new Map(dijkstra(cy, selected[0]));
+		if (dijkstraOut.get(selected[1]) !== Infinity) {
+			messager.send(msgTypes.showMessageBox, 'Input error', 'Select two nodes from two UNCONNECTED graphs and start again');
+			return;
+		}
+
+		let graph1 = cy.collection().merge(selected[0]);
+		let graph2 = cy.collection().merge(selected[1]);
+		debugger;
+		while (true) {
+			const neighbours = graph1.neighborhood();
+			if (neighbours && neighbours.length === 0) break;
+			graph1.merge(neighbours);
+		}
+		while (true) {
+			const neighbours = graph2.neighborhood();
+			if (neighbours.length === 0) break;
+			graph2.merge(neighbours);
+		}
+
+
+
+		function permute(arr) {
+			let l = arr.length,
+				used = Array(l),
+				data = Array(l);
+			return function* backtracking(pos) {
+				if(pos === l) yield data.slice();
+				else for(var i=0; i<l; ++i) if(!used[i]) {
+					used[i] = true;
+					data[pos] = arr[i];
+					yield* backtracking(pos+1);
+					used[i] = false;
+				}
+			}(0);
+		}
+
+		function rotateMatrix(matrix) {
+			let ret = [];
+			for (let i = 0; i < matrix.length; i++) ret.push([]);
+			for (let i = 0; i < matrix.length; i++) {
+				for (let j = 0; j < matrix.length; j++) {
+					ret[j].push(matrix[i][j]);
+				}
+			}
+			return ret;
+		}
+
+
+		debugger;
+		const adjMatrix1 = amgdEncode({nodes: graph1.filter('node'), edges: graph1.filter('edge')}).content;
+		let adjMatrix2 = permute(amgdEncode({nodes: graph2.filter('node'), edges: graph2.filter('edge')}).content);
+		let isomorphic = undefined;
+
+		if (adjMatrix1.length !== adjMatrix2.length) isomorphic = false;
+		if (graph1.filter('edge').length !== graph2.filter('edge').length) isomorphic = false;
+
+		if (isomorphic === undefined) {
+			for (const perm of adjMatrix2) {
+				let rotMatrixPerm = permute(rotateMatrix(adjMatrix2));
+				for (const perm2 of rotMatrixPerm) {
+					let resMatrix = rotateMatrix(perm2);
+					if (JSON.stringify(resMatrix) === JSON.stringify(adjMatrix1)) {
+						isomorphic = true;
+						break;
+					}
+				}
+				if (isomorphic) break;
+			}
+		}
+
+		messager.send(msgTypes.showMessageBox, 'Isomorphism', `Graph are ${isomorphic ? '' : 'not '}isomorphic`);
 	}
 
 	static RecoverGraphFromVector(cy) {

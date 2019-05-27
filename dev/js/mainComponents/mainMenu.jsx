@@ -110,6 +110,10 @@ export default {
 					label: 'Show minimum cycle/tree root',
 					click: () => ipcSend("execute-algorithm", TaskTypeEnum.CycleProblem),
 				},
+				// {
+				// 	label: 'Are two graphs isomorphic',
+				// 	click: () => ipcSend("execute-algorithm", TaskTypeEnum.GraphIsomorphism),
+				// },
 			]
 		},
 		{
